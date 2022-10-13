@@ -13,6 +13,11 @@ login_details = {
         "email": "rbriggs@gmail.com",
         "name": "Rebecca Briggs",
         "password": 456
+      },
+      "lzhang": {
+        "email": "shlilyxu@hotmail.com",
+        "name": "Lily Zhang",
+        "password": 987
       }
     }
   },
