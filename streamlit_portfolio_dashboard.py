@@ -1,8 +1,10 @@
+from unicodedata import name
 import streamlit as st
 import pandas as pd
 import ticker_resolution as tr
 import getEODprice as g12
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 def replace_duplicated_ticker(df_in: pd.DataFrame) -> pd.DataFrame:
     """Due to corp events such as SPAC conversion, ticker may change. 
@@ -80,16 +82,34 @@ def threeTabs():
                     st.subheader("Trade history for {}".format(market))
                     st.dataframe(df_trade_history[df_trade_history['Market'] == market])
 
-                    company_list = df_op.index.get_level_values('Market').tolist()
-                    standout = [0]*len(company_list)
-                    standout[company_list.index(market)] = 0.5
-                    print(standout)
-                    fig = go.Figure(data =[go.Pie(
-                        labels = df_op.index.get_level_values('Market'),
-                        values = df_op['current position'],
-                        pull = standout
-                    )])
-                    st.plotly_chart(fig)
+                    df_op_has_position = df_op[df_op['Quantity'] > 0]
+                    if market in df_op_has_position.index.get_level_values('Market'):
+                        company_list = df_op_has_position.index.get_level_values('Market').tolist()
+                        standout = [0]*len(company_list)
+                        standout[company_list.index(market)] = 0.5
+                        print(standout)
+                        fig = make_subplots(rows=1, cols=2, specs=[[{"type": "domain"}, {"type": "domain"}]]) # specs explained in https://plotly.com/python/subplots/
+                        fig.add_trace(go.Pie(
+                            labels = company_list,
+                            values = df_op_has_position['current position'],
+                            pull = standout, 
+                            name = "Current Position",
+                        ), 1, 1)
+                        fig.add_trace(go.Pie(
+                            labels = company_list,
+                            values = abs(df_op_has_position['Cost/Proceeds']),
+                            pull = standout, 
+                            name = "Investment",
+                        ), 1, 2)
+                        fig.update_layout(
+                            title_text="Current position and total investment on each instrument",
+                            width=1000, 
+                            height=800
+                        )
+                            # annotations=[dict(text='Current position', x=0.18, y=0.5, font_size=20, showarrow=False),
+                            #              dict(text='£ invested', x=0.82, y=0.5, font_size=20, showarrow=False)])
+                        st.plotly_chart(fig, use_container_width=True)
+
 
 
 
