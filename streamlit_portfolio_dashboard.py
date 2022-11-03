@@ -1,10 +1,10 @@
-from unicodedata import name
 import streamlit as st
 import pandas as pd
 import ticker_resolution as tr
 import getEODprice as g12
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import pandas_datareader.data as web
 
 def replace_duplicated_ticker(df_in: pd.DataFrame) -> pd.DataFrame:
     """Due to corp events such as SPAC conversion, ticker may change. 
@@ -104,7 +104,8 @@ def threeTabs():
                         fig.update_layout(
                             title_text="Current position and total investment on each instrument",
                             width=1000, 
-                            height=800
+                            height=800,
+                            showlegend=False
                         )
                             # annotations=[dict(text='Current position', x=0.18, y=0.5, font_size=20, showarrow=False),
                             #              dict(text='£ invested', x=0.82, y=0.5, font_size=20, showarrow=False)])
@@ -140,18 +141,34 @@ def threeTabs():
 
 
     with tab2:
-        st.header("Financial Independence and Retire Early")
-        # isa_annual_contrib = 20000
-        # current_ttl = 86700
-        # if df_transactions exists
-        if 'df_transactions' in locals():
-            st.write("df_transactions exists in local")
-            st.metric(label="Current available cash in GBP", value=df_transactions['PL Amount'].sum())
-
+        st.header("Macro ecconomic environment")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("VIX")
+            df_vix = web.DataReader('^VIX', 'yahoo', start='2019-01-01')
+            fig = go.Figure(data=[go.Candlestick(x=df_vix.index,
+                    open=df_vix['Open'],
+                    high=df_vix['High'],
+                    low=df_vix['Low'],
+                    close=df_vix['Close'])])
+            fig.update_layout(yaxis_title='VIX', xaxis_title='Date')
+            st.plotly_chart(fig, use_container_width=True)
+            st.write(df_vix.tail(1).reset_index())
+        with col2:
+            st.subheader("Real GDP Percentage Change")
+            df_gdp = web.DataReader('A191RL1Q225SBEA', 'fred', start='2007-01-01')
+            fig = go.Figure(data=[go.Bar(x=df_gdp.index, y=df_gdp["A191RL1Q225SBEA"])])
+            fig.update_layout(xaxis_title="Year", yaxis_title="% Change")
+            st.plotly_chart(fig, use_container_width=True)
+            df_gdp.rename(columns={'A191RL1Q225SBEA': 'GDP % Change'}, inplace=True)
+            st.write(df_gdp.tail(4)[::-1])
         st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
 
     with tab3:
-        st.header("An owl")
+        st.header("Financial Independent and Retire Early")
+        if 'df_transactions' in locals():
+            st.write("df_transactions exists in local")
+            st.metric(label="Current available cash in GBP", value=df_transactions['PL Amount'].sum())
         st.image("https://static.streamlit.io/examples/owl.jpg", width=200)
 
 
