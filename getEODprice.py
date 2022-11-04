@@ -22,7 +22,13 @@ def less_than_32_symbols(symbols_in_8s, k) -> dict:
         response = requests.get(url, params=params)
         r = response.json()
         for ticker in each_8_symbols:
-            close_price[ticker] = r[ticker]["close"]
+            try:
+                close_price[ticker] = r[ticker]["close"]
+            except KeyError:
+                try:
+                    close_price[ticker] = r["close"]
+                except:
+                    print("Keyerror", response.text)
     return close_price
 
 
