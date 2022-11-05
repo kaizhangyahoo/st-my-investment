@@ -26,6 +26,10 @@ def dollar_format():
 def pound_format():
     return "£{:,.2f}"
 
+def color_green_red(val):
+    color = 'green' if val > 0 else 'red'
+    return f'background-color: {color}'
+
 @st.cache
 def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:
     """Calculate open position and costs for each ticker"""
@@ -38,6 +42,24 @@ def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:
     df_op['Last Close'] = df_op.index.get_level_values("Ticker").map(all_symbols_close_price).astype(float)
     df_op['current position'] = df_op['Quantity'] * df_op['Last Close']
     return df_op[['Quantity', 'Consideration', 'current position','Cost/Proceeds', 'Commission','Charges']]
+
+
+def format_df_for_display(df_in: pd.DataFrame) -> pd.DataFrame:
+    df_op_display = df_in.copy()
+    df_op_display['PandL'] = df_op_display['current position'] + df_op_display['Cost/Proceeds']
+    all_currency_columns = ['Consideration', 'Cost/Proceeds', 'Commission', 'Charges', 'current position']
+    has_us_columns = ['Consideration', 'current position']
+    df_op_display[all_currency_columns] = df_op_display[all_currency_columns].applymap(pound_format().format)
+    us_symbols_with_position = [x for x in df_in.index.get_level_values('Ticker') if x.count('.') == 0]
+    df_us = df_op_display[df_op_display.index.get_level_values('Ticker').isin(us_symbols_with_position)]
+    df_us[has_us_columns] = df_us[has_us_columns].applymap(lambda x: x.replace('£', '$'))
+    df_op_display.update(df_us)
+    df_op_display.dropna(inplace=True)
+    # df_op_display = df_op_display.style.applymap(color_green_red, subset=['PandL'])
+    column_rename = {'Consideration': '$ invested excl costs', 'Cost/Proceeds': 'ttl £ invested'}
+    df_op_display.rename(columns=column_rename, inplace=True)
+    return df_op_display.sort_values('Quantity', ascending=False)
+
 
 
 def threeTabs():
@@ -63,19 +85,7 @@ def threeTabs():
                     st.subheader("Open positions and costs")
                     with st.spinner("Loading tickers into dataframe, take up to 30 seconds..."):
                         df_op = openPositionsCosts(df_trade_history)
-                        print(df_op)
-                        # format the dataframe for display
-                        df_op_display = df_op.copy()
-                        all_currency_columns = ['Consideration', 'Cost/Proceeds', 'Commission', 'Charges', 'current position']
-                        has_us_columns = ['Consideration', 'current position']
-                        df_op_display[all_currency_columns] = df_op_display[all_currency_columns].applymap(pound_format().format)
-                        us_symbols_with_position = [x for x in df_op.index.get_level_values('Ticker') if x.count('.') == 0]
-                        df_us = df_op_display[df_op_display.index.get_level_values('Ticker').isin(us_symbols_with_position)]
-                        df_us[has_us_columns] = df_us[has_us_columns].applymap(lambda x: x.replace('£', '$'))
-                        df_op_display.update(df_us)
-                        column_rename = {'Consideration': '$ invested excl costs', 'Cost/Proceeds': 'ttl £ invested'}
-                        df_op_display = df_op_display.rename(columns=column_rename)
-                        st.dataframe(df_op_display.sort_values('Quantity', ascending=False))
+                        st.dataframe(format_df_for_display(df_op).style.applymap(color_green_red, subset=['PandL']))
 
                     market_list = df_trade_history['Market'].unique()
                     market = st.selectbox("Select Stock", market_list)
@@ -112,8 +122,6 @@ def threeTabs():
                         st.plotly_chart(fig, use_container_width=True)
 
 
-
-
                 elif f.name.startswith("Transaction") and f.name.endswith(".csv"):
                     df_transactions = pd.read_csv(f)
                     st.subheader("latest transaction history")
@@ -134,10 +142,6 @@ def threeTabs():
                 else:
                     st.write("filename must begin with 'Trades' or 'Transaction' and format must be a csv")
             
-        else:
-            st.error("no file uploaded")
-        
-
 
 
     with tab2:
@@ -162,7 +166,58 @@ def threeTabs():
             st.plotly_chart(fig, use_container_width=True)
             df_gdp.rename(columns={'A191RL1Q225SBEA': 'GDP % Change'}, inplace=True)
             st.write(df_gdp.tail(4)[::-1])
-        st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
+
+        row1_col1, row1_col2, = st.columns(2)
+        with row1_col1:
+            st.subheader("PCE")
+            df_pce = web.DataReader('PCE', 'fred', start='2019-01-01')
+            fig = go.Figure([go.Scatter(x=df_pce.index, y=df_pce['PCE'])])
+            fig.update_layout(xaxis_title="Year", yaxis_title="PCE (USD Billion)")
+            st.plotly_chart(fig, use_container_width=True)
+            st.write(df_pce.head(3))
+        with row1_col2:
+            st.subheader("CPI")
+            df_cpi = web.DataReader('CPIAUCSL', 'fred', start='2019-01-01')
+            fig = go.Figure([go.Scatter(x=df_cpi.index, y=df_cpi['CPIAUCSL'])])
+            fig.update_layout(xaxis_title="Year", yaxis_title="Index 1982-1984=100")
+            st.plotly_chart(fig, use_container_width=True)
+            st.write(df_cpi.head(3))
+        
+        st.subheader("CPI & PCE % Change")
+        cpi = web.DataReader('CORESTICKM159SFRBATL', 'fred', start='2020-10-01')
+        cpi.rename(columns={"CORESTICKM159SFRBATL": "CPI less food energy"}, inplace=True)
+        pce = web.DataReader('PCEPI', 'fred', start='2019-10-01')
+        pce['pct change'] = pce.pct_change(periods=12)*100
+        pce.dropna(inplace=True)
+        cpi_pce = pd.concat([cpi, pce], axis=1)
+        fig = go.Figure(data=[go.Scatter(x=cpi_pce.index, y=cpi_pce["CPI less food energy"], name='CPI less food energy'),
+                                go.Scatter(x=cpi_pce.index, y=cpi_pce["pct change"], name='PCE % change')])
+        fig.update_layout(xaxis_title="Date", yaxis_title="% Change")
+        st.plotly_chart(fig, use_container_width=True)
+        st.write(cpi_pce.tail(3))
+            
+        st.subheader("Unemployment Rate and Consumer Confidence")
+
+        row2_col1, row2_col2, = st.columns(2, gap="medium")
+        with row2_col1:
+            df_unemployment = web.DataReader('UNRATE', 'fred', start='2020-11-01')
+            fig = go.Figure([go.Scatter(x=df_unemployment.index, y=df_unemployment['UNRATE'])])
+            fig.update_layout(xaxis_title="Year", yaxis_title="Unemployment Rate")
+            st.plotly_chart(fig)
+            st.write(df_unemployment.tail(3))
+            
+        with row2_col2:
+            df_consumerConf = web.DataReader('UMCSENT', 'fred', start='2019-01-01')
+            fig = go.Figure([go.Scatter(x=df_consumerConf.index, y=df_consumerConf['UMCSENT'])])
+            fig.update_layout(xaxis_title="Year", yaxis_title="Consumer Confidence")
+            st.plotly_chart(fig, use_container_width=True)
+            st.write(df_consumerConf.tail(3))
+            
+        # st.subheader("ISM Manufacturing")
+        # df_ism = web.DataReader()
+        
+
+
 
     with tab3:
         st.header("Financial Independent and Retire Early")
