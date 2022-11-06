@@ -5,6 +5,7 @@ import getEODprice as g12
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas_datareader.data as web
+import macro_widgets as mw
 
 def replace_duplicated_ticker(df_in: pd.DataFrame) -> pd.DataFrame:
     """Due to corp events such as SPAC conversion, ticker may change. 
@@ -149,15 +150,9 @@ def threeTabs():
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("VIX")
-            df_vix = web.DataReader('^VIX', 'yahoo', start='2019-01-01')
-            fig = go.Figure(data=[go.Candlestick(x=df_vix.index,
-                    open=df_vix['Open'],
-                    high=df_vix['High'],
-                    low=df_vix['Low'],
-                    close=df_vix['Close'])])
-            fig.update_layout(yaxis_title='VIX', xaxis_title='Date')
+            fig, current_vix = mw.get_vix_from_yahoo("2019-01-01")
             st.plotly_chart(fig, use_container_width=True)
-            st.write(df_vix.tail(1).reset_index())
+            st.write(current_vix)
         with col2:
             st.subheader("Real GDP Percentage Change")
             df_gdp = web.DataReader('A191RL1Q225SBEA', 'fred', start='2007-01-01')
@@ -213,11 +208,12 @@ def threeTabs():
             st.plotly_chart(fig, use_container_width=True)
             st.write(df_consumerConf.tail(3))
             
+        st.subheader("Treasury Yield Curve")
+        st.plotly_chart(mw.treasury_curve("2022-11-02"))
+        
         # st.subheader("ISM Manufacturing")
         # df_ism = web.DataReader()
         
-
-
 
     with tab3:
         st.header("Financial Independent and Retire Early")
