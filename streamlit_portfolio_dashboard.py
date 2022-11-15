@@ -155,58 +155,38 @@ def threeTabs():
             st.write(current_vix)
         with col2:
             st.subheader("Real GDP Percentage Change")
-            df_gdp = web.DataReader('A191RL1Q225SBEA', 'fred', start='2007-01-01')
-            fig = go.Figure(data=[go.Bar(x=df_gdp.index, y=df_gdp["A191RL1Q225SBEA"])])
-            fig.update_layout(xaxis_title="Year", yaxis_title="% Change")
+            fig, last4qtr = mw.real_gdp_pct_change("2012-01-01")
             st.plotly_chart(fig, use_container_width=True)
-            df_gdp.rename(columns={'A191RL1Q225SBEA': 'GDP % Change'}, inplace=True)
-            st.write(df_gdp.tail(4)[::-1])
+            st.write(last4qtr)
 
         row1_col1, row1_col2, = st.columns(2)
         with row1_col1:
             st.subheader("PCE")
-            df_pce = web.DataReader('PCE', 'fred', start='2019-01-01')
-            fig = go.Figure([go.Scatter(x=df_pce.index, y=df_pce['PCE'])])
-            fig.update_layout(xaxis_title="Year", yaxis_title="PCE (USD Billion)")
+            fig, last3monthpce = mw.pce_from_fred("2019-01-01")
             st.plotly_chart(fig, use_container_width=True)
-            st.write(df_pce.head(3))
+            st.write(last3monthpce)
         with row1_col2:
             st.subheader("CPI")
-            df_cpi = web.DataReader('CPIAUCSL', 'fred', start='2019-01-01')
-            fig = go.Figure([go.Scatter(x=df_cpi.index, y=df_cpi['CPIAUCSL'])])
-            fig.update_layout(xaxis_title="Year", yaxis_title="Index 1982-1984=100")
+            fig, last3monthcpi = mw.cpi_from_fred("2019-01-01")
             st.plotly_chart(fig, use_container_width=True)
-            st.write(df_cpi.head(3))
+            st.write(last3monthcpi)
         
         st.subheader("CPI & PCE % Change")
-        cpi = web.DataReader('CORESTICKM159SFRBATL', 'fred', start='2020-10-01')
-        cpi.rename(columns={"CORESTICKM159SFRBATL": "CPI less food energy"}, inplace=True)
-        pce = web.DataReader('PCEPI', 'fred', start='2019-10-01')
-        pce['pct change'] = pce.pct_change(periods=12)*100
-        pce.dropna(inplace=True)
-        cpi_pce = pd.concat([cpi, pce], axis=1)
-        fig = go.Figure(data=[go.Scatter(x=cpi_pce.index, y=cpi_pce["CPI less food energy"], name='CPI less food energy'),
-                                go.Scatter(x=cpi_pce.index, y=cpi_pce["pct change"], name='PCE % change')])
-        fig.update_layout(xaxis_title="Date", yaxis_title="% Change")
+        fig, last3month_cpi_pce = mw.cpi_pce_pct_change_from_fred("2020-01-01")
         st.plotly_chart(fig, use_container_width=True)
-        st.write(cpi_pce.tail(3))
+        st.write(last3month_cpi_pce)
             
         st.subheader("Unemployment Rate and Consumer Confidence")
-
         row2_col1, row2_col2, = st.columns(2, gap="medium")
         with row2_col1:
-            df_unemployment = web.DataReader('UNRATE', 'fred', start='2020-11-01')
-            fig = go.Figure([go.Scatter(x=df_unemployment.index, y=df_unemployment['UNRATE'])])
-            fig.update_layout(xaxis_title="Year", yaxis_title="Unemployment Rate")
+            fig, last3month_unemployment = mw.unemployment_rate_from_fred("2020-01-01")
             st.plotly_chart(fig)
-            st.write(df_unemployment.tail(3))
+            st.write(last3month_unemployment)
             
         with row2_col2:
-            df_consumerConf = web.DataReader('UMCSENT', 'fred', start='2019-01-01')
-            fig = go.Figure([go.Scatter(x=df_consumerConf.index, y=df_consumerConf['UMCSENT'])])
-            fig.update_layout(xaxis_title="Year", yaxis_title="Consumer Confidence")
+            fig, last3month_consumer_confidence = mw.consumer_confidence_from_fred("2020-01-01")
             st.plotly_chart(fig, use_container_width=True)
-            st.write(df_consumerConf.tail(3))
+            st.write(last3month_consumer_confidence)
             
         st.subheader("Treasury Yield Curve")
         st.plotly_chart(mw.treasury_curve("2022-11-02"))
