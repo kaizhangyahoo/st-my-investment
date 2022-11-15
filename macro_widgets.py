@@ -11,9 +11,55 @@ def get_vix_from_yahoo(start_date):
             low=df_vix['Low'],
             close=df_vix['Close'])])
     fig.update_layout(yaxis_title='VIX', xaxis_title='Date')
+    df_vix.index = df_vix.index.strftime('%Y-%m-%d')
     return fig, df_vix.tail(1)
 
+def real_gdp_pct_change(start_date):
+    df_gdp = web.DataReader('A191RL1Q225SBEA', 'fred', start=start_date)
+    fig = go.Figure(data=[go.Bar(x=df_gdp.index, y=df_gdp["A191RL1Q225SBEA"])])
+    fig.update_layout(xaxis_title="Year", yaxis_title="% Change")
+    df_gdp.rename(columns={'A191RL1Q225SBEA': 'GDP % Change'}, inplace=True)
+    df_gdp.index = df_gdp.index.strftime('%Y-%m-%d')
+    return fig, df_gdp.tail(4)[::-1]
 
+def pce_from_fred(start_date):
+    df_pce = web.DataReader('PCE', 'fred', start=start_date)
+    fig = go.Figure(data=[go.Scatter(x=df_pce.index, y=df_pce["PCE"])])
+    fig.update_layout(xaxis_title="Year", yaxis_title="PCE (USD Billion)")
+    df_pce.index = df_pce.index.strftime('%Y-%m-%d')
+    return fig, df_pce.tail(3)
+
+def cpi_from_fred(start_date):
+    df_cpi = web.DataReader('CPIAUCSL', 'fred', start=start_date)
+    fig = go.Figure([go.Scatter(x=df_cpi.index, y=df_cpi['CPIAUCSL'])])
+    fig.update_layout(xaxis_title="Year", yaxis_title="Index 1982-1984=100")
+    df_cpi.index = df_cpi.index.strftime('%Y-%m-%d')
+    return fig, df_cpi.tail(3)
+
+def cpi_pce_pct_change_from_fred(start_date):
+    cpi = web.DataReader('CORESTICKM159SFRBATL', 'fred', start=start_date)
+    cpi.rename(columns={"CORESTICKM159SFRBATL": "CPI less food energy"}, inplace=True)
+    pce_start = pd.to_datetime(start_date) - pd.DateOffset(years=1)
+    pce = web.DataReader('PCEPI', 'fred', start=pce_start)
+    pce['pct change'] = pce.pct_change(periods=12)*100
+    pce.dropna(inplace=True)
+    cpi_pce = pd.concat([cpi, pce], axis=1)
+    fig = go.Figure(data=[go.Scatter(x=cpi_pce.index, y=cpi_pce["CPI less food energy"], name='CPI less food energy % yoy'),
+                            go.Scatter(x=cpi_pce.index, y=cpi_pce["pct change"], name='PCE % change')])
+    fig.update_layout(xaxis_title="Date", yaxis_title="% Change")
+    return fig, cpi_pce.tail(3)
+
+def unemployment_rate_from_fred(start_date):
+    df_unemployment = web.DataReader('UNRATE', 'fred', start=start_date)
+    fig = go.Figure(data=[go.Scatter(x=df_unemployment.index, y=df_unemployment["UNRATE"])])
+    fig.update_layout(xaxis_title="Year", yaxis_title="Unemployment Rate")
+    return fig, df_unemployment.tail(3)
+
+def consumer_confidence_from_fred(start_date):
+    df_consumer_confidence = web.DataReader('UMCSENT', 'fred', start=start_date)
+    fig = go.Figure(data=[go.Scatter(x=df_consumer_confidence.index, y=df_consumer_confidence["UMCSENT"])])
+    fig.update_layout(xaxis_title="Year", yaxis_title="Consumer Confidence")
+    return fig, df_consumer_confidence.tail(3)
 
 def treasury_curve(start_date):
     ndqk = b'ud--wr-4nbzKnr-5tIzCmZjBo6o'
