@@ -2,6 +2,8 @@ import miniEnc as enc
 import pandas as pd
 import pandas_datareader.data as web
 import plotly.graph_objects as go
+import plotly.express as px
+
 
 def get_vix_from_yahoo(start_date):
     df_vix = web.DataReader('^VIX', 'yahoo', start=start_date)
@@ -72,6 +74,32 @@ def treasury_curve(start_date):
     fig.add_vrect(x0="2 YR", x1="5 YR", fillcolor="LightGreen", opacity=0.5, line_width=0, annotation_text = "Note", annotation_position="top left")
     fig.add_vrect(x0="7 YR", x1="30 YR", fillcolor="LightBlue", opacity=0.5, line_width=0, annotation_text = "Bond", annotation_position="top left")
     return fig
+
+def sp500_winner_loser_treemap():
+    """ Treemap continous color scale: https://plotly.com/python/builtin-colorscales/#continuous-color-scales-in-dash
+    discrete color scale: https://plotly.com/python/discrete-color/ """
+    df = pd.read_csv('sp500_changes.csv')
+    df_result_positives = df[df['Day Pctage Change'] > 0]
+    df_result_negatives = df[df['Day Pctage Change'] < 0]
+    winner_fig = px.treemap(
+        df_result_positives, 
+        path=['GICS Sector' , 'GICS Sub-Industry', 'Security'], 
+        values='Day Pctage Change', 
+        color='Day Pctage Change', 
+        hover_data=['Last Price', 'Day Pctage Change', 'Symbol'], 
+        color_continuous_scale='greens',)
+        #color_discrete_map={'Day Pctage Change': px.colors.sequential.Greens})
+    df_result_negatives['Day Pctage Change'] = df_result_negatives['Day Pctage Change'] * -1
+    loser_fig = px.treemap(
+        df_result_negatives, 
+        path=['GICS Sector' , 'GICS Sub-Industry', 'Security'], 
+        values='Day Pctage Change', 
+        color='Day Pctage Change',
+        hover_data=['Last Price', 'Day Pctage Change', 'Symbol'], 
+        #color_discrete_sequence=px.colors.sequential.RdYlBu)
+        color_continuous_scale='burg')
+        #color_discrete_map={'Day Pctage Change': px.colors.sequential.speed})
+    return winner_fig, loser_fig
 
 def main():
     start_date = '2022-11-01'
