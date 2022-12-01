@@ -2,10 +2,9 @@ import streamlit as st
 import pandas as pd
 import ticker_resolution as tr
 import getEODprice as g12
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import pandas_datareader.data as web
 import macro_widgets as mw
+import plot_portfolio_weights as ppw
+from datetime import datetime
 
 def replace_duplicated_ticker(df_in: pd.DataFrame) -> pd.DataFrame:
     """Due to corp events such as SPAC conversion, ticker may change. 
@@ -98,28 +97,7 @@ def threeTabs():
                         company_list = df_op_has_position.index.get_level_values('Market').tolist()
                         standout = [0]*len(company_list)
                         standout[company_list.index(market)] = 0.5
-                        print(standout)
-                        fig = make_subplots(rows=1, cols=2, specs=[[{"type": "domain"}, {"type": "domain"}]]) # specs explained in https://plotly.com/python/subplots/
-                        fig.add_trace(go.Pie(
-                            labels = company_list,
-                            values = df_op_has_position['current position'],
-                            pull = standout, 
-                            name = "Current Position",
-                        ), 1, 1)
-                        fig.add_trace(go.Pie(
-                            labels = company_list,
-                            values = abs(df_op_has_position['Cost/Proceeds']),
-                            pull = standout, 
-                            name = "Investment",
-                        ), 1, 2)
-                        fig.update_layout(
-                            title_text="Current position and total investment on each instrument",
-                            width=1000, 
-                            height=800,
-                            showlegend=False
-                        )
-                            # annotations=[dict(text='Current position', x=0.18, y=0.5, font_size=20, showarrow=False),
-                            #              dict(text='£ invested', x=0.82, y=0.5, font_size=20, showarrow=False)])
+                        fig = ppw.plot_portfolio_weights(df_op_has_position, company_list, standout)
                         st.plotly_chart(fig, use_container_width=True)
 
 
@@ -189,10 +167,20 @@ def threeTabs():
             st.write(last3month_consumer_confidence)
             
         st.subheader("Treasury Yield Curve")
-        st.plotly_chart(mw.treasury_curve("2022-11-02"))
+        last_business_day = (datetime.today() - pd.offsets.BDay(1)).strftime("%Y-%m-%d")
+        st.plotly_chart(mw.treasury_curve(last_business_day), use_container_width=True)
         
-        # st.subheader("ISM Manufacturing")
-        # df_ism = web.DataReader()
+        # TODO: st.subheader("ISM Manufacturing")
+
+        if st.button("latest winners and losers", help="finage allowance might reach"):
+            winner, loser = mw.sp500_winner_loser_treemap()
+            st.write("latest winners")
+            st.plotly_chart(winner)
+            st.write("latest loser")
+            st.plotly_chart(loser)
+
+
+
         
 
     with tab3:
