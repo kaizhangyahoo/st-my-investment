@@ -4,7 +4,7 @@ import ticker_resolution as tr
 import getEODprice as g12
 import macro_widgets as mw
 import plot_portfolio_weights as ppw
-from datetime import datetime
+import datetime as dt
 
 def replace_duplicated_ticker(df_in: pd.DataFrame) -> pd.DataFrame:
     """Due to corp events such as SPAC conversion, ticker may change. 
@@ -167,8 +167,13 @@ def threeTabs():
             st.write(last3month_consumer_confidence)
             
         st.subheader("Treasury Yield Curve")
-        last_business_day = (datetime.today() - pd.offsets.BDay(1)).strftime("%Y-%m-%d")
-        st.plotly_chart(mw.treasury_curve(last_business_day), use_container_width=True)
+        last_business_day = dt.datetime.today() - pd.offsets.BDay(1)
+        t_curve_date = st.date_input("Select date", last_business_day, help="present or future date show max history").strftime("%Y-%m-%d")
+        if "t_curve_date" not in st.session_state:
+            st.session_state["t_curve_date"] = t_curve_date
+        elif st.session_state["t_curve_date"] >= t_curve_date:
+            st.session_state["t_curve_date"] = t_curve_date
+            st.plotly_chart(mw.treasury_curve(t_curve_date), use_container_width=True)
         
         # TODO: st.subheader("ISM Manufacturing")
 

@@ -3,6 +3,7 @@ import pandas as pd
 import pandas_datareader.data as web
 import plotly.graph_objects as go
 import plotly.express as px
+import datetime as dt
 
 
 def get_vix_from_yahoo(start_date):
@@ -66,14 +67,22 @@ def consumer_confidence_from_fred(start_date):
 def treasury_curve(start_date):
     ndqk = b'ud--wr-4nbzKnr-5tIzCmZjBo6o'
     nasdaq = enc.decode(enc.cccccccz, ndqk)
-    df_treasuries_yield = pd.read_csv(f"https://data.nasdaq.com/api/v3/datasets/USTREASURY/YIELD.csv?api_key={nasdaq}&start_date={start_date}")
-    df_treasuries_yield = df_treasuries_yield.set_index('Date')
-    df_treasuries_yield.index = pd.to_datetime(df_treasuries_yield.index)
-    fig = go.Figure(go.Scatter(x=df_treasuries_yield.columns, y=df_treasuries_yield.loc[start_date]))
-    fig.add_vrect(x0="1 MO", x1="1 YR", fillcolor="LightSalmon", opacity=0.5, line_width=0, annotation_text = "Bill", annotation_position="top left")
-    fig.add_vrect(x0="2 YR", x1="5 YR", fillcolor="LightGreen", opacity=0.5, line_width=0, annotation_text = "Note", annotation_position="top left")
-    fig.add_vrect(x0="7 YR", x1="30 YR", fillcolor="LightBlue", opacity=0.5, line_width=0, annotation_text = "Bond", annotation_position="top left")
-    return fig
+
+    if start_date < dt.datetime.today().strftime('%Y-%m-%d'):        
+        df_treasuries_yield = pd.read_csv(f"https://data.nasdaq.com/api/v3/datasets/USTREASURY/YIELD.csv?api_key={nasdaq}&start_date={start_date}")
+        df_treasuries_yield = df_treasuries_yield.set_index('Date')
+        df_treasuries_yield.index = pd.to_datetime(df_treasuries_yield.index)
+        fig = go.Figure(go.Scatter(x=df_treasuries_yield.columns, y=df_treasuries_yield.loc[start_date]))
+        fig.add_vrect(x0="1 MO", x1="1 YR", fillcolor="LightSalmon", opacity=0.5, line_width=0, annotation_text = "Bill", annotation_position="top left")
+        fig.add_vrect(x0="2 YR", x1="5 YR", fillcolor="LightGreen", opacity=0.5, line_width=0, annotation_text = "Note", annotation_position="top left")
+        fig.add_vrect(x0="7 YR", x1="30 YR", fillcolor="LightBlue", opacity=0.5, line_width=0, annotation_text = "Bond", annotation_position="top left")
+        return fig
+    else:
+        df_treasuries_yield = pd.read_csv(f"https://data.nasdaq.com/api/v3/datasets/USTREASURY/YIELD.csv?api_key={nasdaq}")
+        df_treasuries_yield = df_treasuries_yield.set_index('Date')
+        plot = px.line(df_treasuries_yield, x=df_treasuries_yield.index, y=df_treasuries_yield.columns, title='Treasury rates full history')
+        return plot
+
 
 def sp500_winner_loser_treemap():
     """ Treemap continous color scale: https://plotly.com/python/builtin-colorscales/#continuous-color-scales-in-dash
