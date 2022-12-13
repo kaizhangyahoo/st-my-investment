@@ -15,5 +15,6 @@ def decode(key, string):
     encoded_string = ''.join(encoded_chars)
     return encoded_string
 
-scramble = b'tbW808C4vtO8o6urmH15lnjCucbHxb6Ys2uIpcKbvsnHpbqiq5yr'
-print(decode(cccccccz, scramble))
+if __name__ == "__main__":
+    scramble = b'tbW808C4vtO8o6urmH15lnjCucbHxb6Ys2uIpcKbvsnHpbqiq5yr'
+    print(decode(cccccccz, scramble))
