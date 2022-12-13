@@ -169,11 +169,7 @@ def threeTabs():
         st.subheader("Treasury Yield Curve")
         last_business_day = dt.datetime.today() - pd.offsets.BDay(1)
         t_curve_date = st.date_input("Select date", last_business_day, help="present or future date show max history").strftime("%Y-%m-%d")
-        if "t_curve_date" not in st.session_state:
-            st.session_state["t_curve_date"] = t_curve_date
-        elif st.session_state["t_curve_date"] >= t_curve_date:
-            st.session_state["t_curve_date"] = t_curve_date
-            st.plotly_chart(mw.treasury_curve(t_curve_date), use_container_width=True)
+        st.plotly_chart(mw.treasury_curve(t_curve_date), use_container_width=True)
         
         # TODO: st.subheader("ISM Manufacturing")
 
