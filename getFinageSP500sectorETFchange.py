@@ -34,12 +34,12 @@ class Finage:
         df_sp500_changes_T = df_sp500_changes.T
         df_sp500_changes_T.drop(columns=["t"], inplace=True)
         df_sp500_changes_T.rename(columns=col_renames, inplace=True)
-        df_result = df_sp500_changes_T.merge(how = 'left', right = df_sp500_wiki, left_on = df_sp500_changes_T.index, right_on = 'Symbol')
+        df_result = df_sp500_changes_T.merge(df_sp500_wiki, left_on='s', right_on='Symbol')
         df_result_positives = df_result[df_result['Day Pctage Change'] > 0]
         df_result_negatives = df_result[df_result['Day Pctage Change'] < 0]
         return df_result_positives, df_result_negatives
 
 if __name__ == "__main__":
     finage = Finage()
-    print(finage.sector_etf_change())
+    #print(finage.sector_etf_change())
     print(finage.sp500_change_by_sector())
