@@ -11,7 +11,7 @@ class Finage:
         finage = b'tbW808C4vtO8o6urmH15lnjCucbHxb6Ys2uIpcKbvsnHpbqiq5yr'
         self.finageapi = enc.decode(enc.cccccccz, finage)
         self.dl_lock = threading.Lock()
-        max_concurrent_query = 5 # max concurrent query
+        max_concurrent_query = 10 # max concurrent query
         self.dl_semaphore = threading.Semaphore(max_concurrent_query)
         self.err_results = {}
         self.result = []
@@ -19,7 +19,11 @@ class Finage:
 
     def sector_etf_change(self):
         vanguard_etf = ['VGT', 'VHT','VCR', 'VOX', 'VFH', 'VIS', 'VDC', 'VPU', 'VAW', 'VNQ', 'VDE', 'VOO']
+        sectors = ['Information Technology', 'Health Care', 'Consumer Discretionary', 'Communication Services', 
+                    'Financials', 'Industrials', 'Consumer Staples',  'Utilities',  'Materials', 'Real Estate', 'Energy', 'S&P500' ]
+        df_dict = pd.DataFrame(list(zip(sectors, vanguard_etf)), columns=['Sector', 'ETF'])
         df_sector_ETF_change = self.get_finage_changes(vanguard_etf)
+        df_sector_ETF_change = df_sector_ETF_change.merge(df_dict, left_on='s', right_on='ETF')
         df_sector_ETF_change.set_index("s", inplace=True)
         return df_sector_ETF_change
     
@@ -36,16 +40,16 @@ class Finage:
         return df_result_positives, df_result_negatives
 
     def get_finage_changes(self, symbol_list: list) -> pd.DataFrame:
-        col_renames = {'lp': 'Last Price', 'cpd': 'Day Pctage Change', 
-        'cpw': 'Week Pctage Change', 'cpm': 'Month Pctage Change', 
-        'cpsm': 'Six Month Pctage Change', 'cpy': 'Year Pctage Change'}
+        col_renames = {'lp': 'Last Price', 'cpd': 'Daily Percentage Change', 
+        'cpw': 'Weekly Percentage Change', 'cpm': 'Monthly Percentage Change', 
+        'cpsm': 'Six Monthly Percentage Change', 'cpy': 'Yearly Percentage Change'}
         df_changes = pd.DataFrame()
         threads = []
         for i in symbol_list:
             t = threading.Thread(target=self.query_threads, args=(i,))
             t.start()
             threads.append(t)            
-        for thread in threads:
+        for thread in tqdm.tqdm(threads):
             thread.join()
 
 
@@ -71,7 +75,7 @@ class Finage:
 
 if __name__ == "__main__":
     finage = Finage()
-    # print(finage.sector_etf_change())
-    print(finage.sp500_change_by_sector())
-    if finage.err_results:
-        print("Error: ", finage.err_results)
+    print(finage.sector_etf_change())
+    # print(finage.sp500_change_by_sector())
+    # if finage.err_results:
+    #     print("Error: ", finage.err_results)

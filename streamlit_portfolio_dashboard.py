@@ -5,6 +5,7 @@ import getEODprice as g12
 import macro_widgets as mw
 import plot_portfolio_weights as ppw
 import datetime as dt
+from market_data_api import Finage
 
 def replace_duplicated_ticker(df_in: pd.DataFrame) -> pd.DataFrame:
     """Due to corp events such as SPAC conversion, ticker may change. 
@@ -60,6 +61,17 @@ def format_df_for_display(df_in: pd.DataFrame) -> pd.DataFrame:
     df_op_display.rename(columns=column_rename, inplace=True)
     return df_op_display.sort_values('Quantity', ascending=False)
 
+@st.cache
+def sector_etf_price_and_changes():
+    vanguard_etf = ['VGT', 'VHT','VCR', 'VOX', 'VFH', 'VIS', 'VDC', 'VPU', 'VAW', 'VNQ', 'VDE', 'VOO']
+    sectors = ['Information Technology', 'Health Care', 'Consumer Discretionary', 'Communication Services', 
+                'Financials', 'Industrials', 'Consumer Staples',  'Utilities',  'Materials', 'Real Estate', 'Energy', 'S&P500' ]
+    df_dict = pd.DataFrame(list(zip(sectors, vanguard_etf)), columns=['Sector', 'ETF'])
+    setf = Finage()
+    df_sector_ETF_change = setf.get_finage_changes(vanguard_etf)
+    df_sector_ETF_change = df_sector_ETF_change.merge(df_dict, left_on='s', right_on='ETF')
+    df_sector_ETF_change.set_index("s", inplace=True)
+    return df_sector_ETF_change
 
 
 def threeTabs():
@@ -136,6 +148,7 @@ def threeTabs():
             fig, last4qtr = mw.real_gdp_pct_change("2012-01-01")
             st.plotly_chart(fig, use_container_width=True)
             st.write(last4qtr)
+        st. write('***')
 
         row1_col1, row1_col2, = st.columns(2)
         with row1_col1:
@@ -148,7 +161,8 @@ def threeTabs():
             fig, last3monthcpi = mw.cpi_from_fred("2019-01-01")
             st.plotly_chart(fig, use_container_width=True)
             st.write(last3monthcpi)
-        
+        st. write('***')
+
         st.subheader("CPI & PCE % Change")
         fig, last3month_cpi_pce = mw.cpi_pce_pct_change_from_fred("2020-01-01")
         st.plotly_chart(fig, use_container_width=True)
@@ -165,7 +179,8 @@ def threeTabs():
             fig, last3month_consumer_confidence = mw.consumer_confidence_from_fred("2020-01-01")
             st.plotly_chart(fig, use_container_width=True)
             st.write(last3month_consumer_confidence)
-            
+        st. write('***')
+
         st.subheader("Treasury Yield Curve")
         last_business_day = dt.datetime.today() - pd.offsets.BDay(1)
         t_curve_date = st.date_input("Select date", last_business_day, help="present or future date show max history").strftime("%Y-%m-%d")
@@ -173,12 +188,22 @@ def threeTabs():
         
         # TODO: st.subheader("ISM Manufacturing")
 
+        st.subheader("sector ETFs")
+        change_length = st.selectbox("change period", 
+                                    ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
+                                    "Six Monthly Percentage Change", "Yearly Percentage Change", "Last Price"],
+                                    help="select the period to show the change", index=4, key="sector_etf_change_length")
+        df = sector_etf_price_and_changes()
+        st.write(df[change_length])
+
+        
         if st.button("latest winners and losers", help="finage allowance might reach"):
             winner, loser = mw.sp500_winner_loser_treemap()
             st.write("latest winners")
             st.plotly_chart(winner)
             st.write("latest loser")
             st.plotly_chart(loser)
+
 
 
 
