@@ -73,7 +73,16 @@ def sector_etf_price_and_changes():
     df_sector_ETF_change.set_index("s", inplace=True)
     return df_sector_ETF_change
 
-
+@st.cache
+def get_sp500_changes():
+    # get a list of S&P500 companies from wikipedia
+    df_sp500_wiki = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+    df_sp500_wiki = df_sp500_wiki[0][["Symbol", "Security", "GICS Sector", "GICS Sub-Industry"]]
+    # get the dataframe for S&P500 changes
+    setf = Finage()
+    df_sp500_changes = setf.get_finage_changes(df_sp500_wiki['Symbol'].tolist())
+    return df_sp500_changes.merge(df_sp500_wiki, left_on='s', right_on='Symbol')
+    
 def threeTabs():
     st.title("My Portfolio")
 
@@ -191,18 +200,20 @@ def threeTabs():
         st.subheader("sector ETFs")
         change_length = st.selectbox("change period", 
                                     ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
-                                    "Six Monthly Percentage Change", "Yearly Percentage Change", "Last Price"],
+                                    "Six Monthly Percentage Change", "Yearly Percentage Change"],
                                     help="select the period to show the change", index=4, key="sector_etf_change_length")
         df = sector_etf_price_and_changes()
-        st.write(df[change_length])
+        print(df)
+        st.plotly_chart(mw.sector_etf_map(df[['Sector', 'ETF', 'Last Price', change_length]]))
 
         
-        if st.button("latest winners and losers", help="finage allowance might reach"):
-            winner, loser = mw.sp500_winner_loser_treemap()
-            st.write("latest winners")
-            st.plotly_chart(winner)
-            st.write("latest loser")
-            st.plotly_chart(loser)
+        if st.button("S&P500 winners and losers", help="finage allowance might reach"):
+            change_length = st.selectbox("change period", 
+                            ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
+                            "Six Monthly Percentage Change", "Yearly Percentage Change"],
+                            help="select the period to show the change", index=4, key="sector_etf_change_length")
+            df = get_sp500_changes()
+            st.table(df)
 
 
 
