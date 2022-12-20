@@ -206,14 +206,19 @@ def threeTabs():
         print(df)
         st.plotly_chart(mw.sector_etf_map(df[['Sector', 'ETF', 'Last Price', change_length]]))
 
-        
-        if st.button("S&P500 winners and losers", help="finage allowance might reach"):
+        if st.checkbox("show s&p500 winner loser", help="finage allowance might reach", key="sp500_win_lose"):
             change_length = st.selectbox("change period", 
                             ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
                             "Six Monthly Percentage Change", "Yearly Percentage Change"],
                             help="select the period to show the change", index=4, key="sector_etf_change_length")
             df = get_sp500_changes()
-            st.table(df)
+            # test purpose only
+            # df = pd.read_csv("sp500_changes.csv")
+            df = df.astype({"Last Price": float, change_length: float})
+            df.to_csv("sp500_changes.csv")
+            df = df[df[change_length]>0]
+            print(df)
+            st.plotly_chart(mw.sp500_win_lose_tree(df[["Symbol","Last Price","Security","GICS Sector","GICS Sub-Industry", change_length]]))
 
 
 

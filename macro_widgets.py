@@ -135,7 +135,7 @@ def sector_etf_map(df: pd.DataFrame):
     df['hovertext'] = df['ETF'] + "  " + df['Last Price'].astype(str)
     df.sort_values(by=last_column, inplace=True, ascending=False)
     tiles = list(chunks(df['display'], 3))
-    tile_index  = list(chunks(df[last_column], 3))
+    tile_index = list(chunks(df[last_column], 3))
     hovertexts = list(chunks(df['hovertext'], 3))
 
     # fig = px.imshow(tile_index, labels=dict(x="Sector", color="PCT Change"), color_continuous_scale=px.colors.sequential.speed, aspect='auto')
@@ -145,6 +145,12 @@ def sector_etf_map(df: pd.DataFrame):
     fig = go.Figure(data=go.Heatmap(z=tile_index[::-1], colorscale=px.colors.sequential.speed, texttemplate="%{text}",
                                     text=tiles[::-1], textfont={'size': 12}, hovertemplate='%{hovertext}', hovertext=hovertexts[::-1]))
     return fig
+
+def sp500_win_lose_tree(df: pd.DataFrame):
+    fig = px.treemap(df, path = ['GICS Sector', 'GICS Sub-Industry', 'Security'], values = df.columns[-1], color = df.columns[-1],
+                    hover_data = ['Last Price', df.columns[-1], 'Symbol'], color_discrete_map={df.columns[-1]: px.colors.sequential.RdBu})
+    return fig
+
 
 
 
