@@ -62,24 +62,24 @@ def format_df_for_display(df_in: pd.DataFrame) -> pd.DataFrame:
     return df_op_display.sort_values('Quantity', ascending=False)
 
 @st.cache
-def sector_etf_price_and_changes():
+def sector_etf_price_and_changes(api: str):
     vanguard_etf = ['VGT', 'VHT','VCR', 'VOX', 'VFH', 'VIS', 'VDC', 'VPU', 'VAW', 'VNQ', 'VDE', 'VOO']
     sectors = ['Information Technology', 'Health Care', 'Consumer Discretionary', 'Communication Services', 
                 'Financials', 'Industrials', 'Consumer Staples',  'Utilities',  'Materials', 'Real Estate', 'Energy', 'S&P500' ]
     df_dict = pd.DataFrame(list(zip(sectors, vanguard_etf)), columns=['Sector', 'ETF'])
-    setf = Finage()
+    setf = Finage(api)
     df_sector_ETF_change = setf.get_finage_changes(vanguard_etf)
     df_sector_ETF_change = df_sector_ETF_change.merge(df_dict, left_on='s', right_on='ETF')
     df_sector_ETF_change.set_index("s", inplace=True)
     return df_sector_ETF_change
 
 @st.cache
-def get_sp500_changes():
+def get_sp500_changes(api: str):
     # get a list of S&P500 companies from wikipedia
     df_sp500_wiki = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
     df_sp500_wiki = df_sp500_wiki[0][["Symbol", "Security", "GICS Sector", "GICS Sub-Industry"]]
     # get the dataframe for S&P500 changes
-    setf = Finage()
+    setf = Finage(api)
     df_sp500_changes = setf.get_finage_changes(df_sp500_wiki['Symbol'].tolist())
     return df_sp500_changes.merge(df_sp500_wiki, left_on='s', right_on='Symbol')
     
@@ -197,28 +197,30 @@ def threeTabs():
         
         # TODO: st.subheader("ISM Manufacturing")
 
-        st.subheader("sector ETFs")
-        change_length = st.selectbox("change period", 
-                                    ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
-                                    "Six Monthly Percentage Change", "Yearly Percentage Change"],
-                                    help="select the period to show the change", index=4, key="sector_etf_change_length")
-        df = sector_etf_price_and_changes()
-        print(df)
-        st.plotly_chart(mw.sector_etf_map(df[['Sector', 'ETF', 'Last Price', change_length]]))
-
-        if st.checkbox("show s&p500 winner loser", help="finage allowance might reach", key="sp500_win_lose"):
+        inputed_api = st.text_input("Enter API key to access changes in sectors", value="finage api key", max_chars=100, help="register at https://moon.finage.co.uk/register")
+        if (inputed_api != "finage api key") and (inputed_api != ""):
+            st.subheader("sector ETFs")
             change_length = st.selectbox("change period", 
-                            ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
-                            "Six Monthly Percentage Change", "Yearly Percentage Change"],
-                            help="select the period to show the change", index=4, key="sector_etf_change_length")
-            df = get_sp500_changes()
-            # test purpose only
-            # df = pd.read_csv("sp500_changes.csv")
-            df = df.astype({"Last Price": float, change_length: float})
-            df.to_csv("sp500_changes.csv")
-            df = df[df[change_length]>0]
+                                        ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
+                                        "Six Monthly Percentage Change", "Yearly Percentage Change"],
+                                        help="select the period to show the change", index=4, key="sector_etf_change_length")
+            df = sector_etf_price_and_changes(inputed_api)
             print(df)
-            st.plotly_chart(mw.sp500_win_lose_tree(df[["Symbol","Last Price","Security","GICS Sector","GICS Sub-Industry", change_length]]))
+            st.plotly_chart(mw.sector_etf_map(df[['Sector', 'ETF', 'Last Price', change_length]]))
+
+            if st.checkbox("show s&p500 winner loser", help="finage allowance might reach", key="sp500_win_lose"):
+                change_length = st.selectbox("change period", 
+                                ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
+                                "Six Monthly Percentage Change", "Yearly Percentage Change"],
+                                help="select the period to show the change", index=4, key="sp500_win_lose_change_length")
+                df = get_sp500_changes(inputed_api)
+                # test purpose only
+                # df = pd.read_csv("sp500_changes.csv")
+                df = df.astype({"Last Price": float, change_length: float})
+                df.to_csv("sp500_changes.csv")
+                df = df[df[change_length]>0]
+                print(df)
+                st.plotly_chart(mw.sp500_win_lose_tree(df[["Symbol","Last Price","Security","GICS Sector","GICS Sub-Industry", change_length]]))
 
 
 

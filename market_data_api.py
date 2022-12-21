@@ -6,26 +6,16 @@ import tqdm
 
 
 class Finage:
-    def __init__(self) -> None:     
+    def __init__(self, api_key) -> None:     
         self.baseurl = "https://api.finage.co.uk/last/stock/changes/"
         finage = b'tbW808C4vtO8o6urmH15lnjCucbHxb6Ys2uIpcKbvsnHpbqiq5yr'
         self.finageapi = enc.decode(enc.cccccccz, finage)
         self.dl_lock = threading.Lock()
-        max_concurrent_query = 10 # max concurrent query
+        max_concurrent_query = 8 # max concurrent query
         self.dl_semaphore = threading.Semaphore(max_concurrent_query)
         self.err_results = {}
         self.result = []
-
-
-    def sector_etf_change(self):
-        vanguard_etf = ['VGT', 'VHT','VCR', 'VOX', 'VFH', 'VIS', 'VDC', 'VPU', 'VAW', 'VNQ', 'VDE', 'VOO']
-        sectors = ['Information Technology', 'Health Care', 'Consumer Discretionary', 'Communication Services', 
-                    'Financials', 'Industrials', 'Consumer Staples',  'Utilities',  'Materials', 'Real Estate', 'Energy', 'S&P500' ]
-        df_dict = pd.DataFrame(list(zip(sectors, vanguard_etf)), columns=['Sector', 'ETF'])
-        df_sector_ETF_change = self.get_finage_changes(vanguard_etf)
-        df_sector_ETF_change = df_sector_ETF_change.merge(df_dict, left_on='s', right_on='ETF')
-        df_sector_ETF_change.set_index("s", inplace=True)
-        return df_sector_ETF_change
+        self.api_key = api_key
     
     def sp500_change_by_sector(self):
         df_sp500_wiki = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
@@ -65,7 +55,7 @@ class Finage:
         df = pd.DataFrame()
         self.dl_semaphore.acquire()
         try:
-            df = pd.read_json(self.baseurl + symbol + "?apikey=" + self.finageapi, typ="series")
+            df = pd.read_json(self.baseurl + symbol + "?apikey=" + self.api_key, typ="series")
             self.result.append(df)
         except Exception as e:
             print(e)
@@ -75,7 +65,6 @@ class Finage:
 
 if __name__ == "__main__":
     finage = Finage()
-    print(finage.sector_etf_change())
-    # print(finage.sp500_change_by_sector())
-    # if finage.err_results:
-    #     print("Error: ", finage.err_results)
+    print(finage.sp500_change_by_sector())
+    if finage.err_results:
+        print("Error: ", finage.err_results)
