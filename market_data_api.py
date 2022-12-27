@@ -1,9 +1,11 @@
 import pandas as pd
 import miniEnc as enc
 import threading
-import time
 import tqdm
-
+import requests
+import json
+from datetime import datetime
+import io
 
 class Finage:
     def __init__(self, api_key) -> None:     
@@ -17,17 +19,17 @@ class Finage:
         self.result = []
         self.api_key = api_key
     
-    def sp500_change_by_sector(self):
-        df_sp500_wiki = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-        df_sp500_wiki = df_sp500_wiki[0][["Symbol", "Security", "GICS Sector", "GICS Sub-Industry"]]
-        start = time.perf_counter()
-        df_sp500_changes = self.get_finage_changes(df_sp500_wiki['Symbol'])
-        df_result = df_sp500_changes.merge(df_sp500_wiki, left_on='s', right_on='Symbol')
-        df_result_positives = df_result[df_result['Day Pctage Change'] > 0]
-        df_result_negatives = df_result[df_result['Day Pctage Change'] < 0]
-        end = time.perf_counter()
-        print(f"Time taken: {end - start}")
-        return df_result_positives, df_result_negatives
+    # def sp500_change_by_sector(self):
+    #     df_sp500_wiki = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+    #     df_sp500_wiki = df_sp500_wiki[0][["Symbol", "Security", "GICS Sector", "GICS Sub-Industry"]]
+    #     start = time.perf_counter()
+    #     df_sp500_changes = self.get_finage_changes(df_sp500_wiki['Symbol'])
+    #     df_result = df_sp500_changes.merge(df_sp500_wiki, left_on='s', right_on='Symbol')
+    #     df_result_positives = df_result[df_result['Day Pctage Change'] > 0]
+    #     df_result_negatives = df_result[df_result['Day Pctage Change'] < 0]
+    #     end = time.perf_counter()
+    #     print(f"Time taken: {end - start}")
+    #     return df_result_positives, df_result_negatives
 
     def get_finage_changes(self, symbol_list: list) -> pd.DataFrame:
         col_renames = {'lp': 'Last Price', 'cpd': 'Daily Percentage Change', 
@@ -63,8 +65,72 @@ class Finage:
         finally:
             self.dl_semaphore.release()
 
+class OHLC_YahooFinance:
+    ''' yahoo queries copied from OHCLData class
+    eg. MSCI = OHLCData("MSCI", "2022-08-08") # end date default to "today" and interval default to "1d"
+
+    yahooV8:        MSCI = OHLCData("MSCI", "2022-08-08", "2022-08-12", "1h").yahooDataV8()
+                    supported interval ["1m", "2m", "5m", "15m", "30m", "1h", "1d","5d", "1wk", "1mo"]
+    yahooV7:        MSCI = OHLCData("MSCI", "2022-08-08", "2022-08-12").yahooDataV7() # interval hardcode to 1d '''
+    def __init__(self, symbol, start_date, end_date = datetime.now().strftime('%Y-%m-%d'), interval = '1d'):
+        self.symbol = symbol
+        self.start_date = start_date
+        self.end_date = end_date
+        self.interval = str(interval)
+        self.header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9 (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9'}
+    
+    def convert_json_to_df(self, json_data):
+        p = json.loads(json_data)
+        ohlc_json = p['chart']['result'][0]['indicators']['quote'][0]
+        dates = p['chart']['result'][0]['timestamp']
+        ohlc_df = pd.DataFrame.from_dict(ohlc_json)
+
+        if self.interval == "1d":
+            ohlc_df['Date'] = [datetime.fromtimestamp(x).date() for x in dates]
+        else:
+            ohlc_df['Date'] = [datetime.fromtimestamp(x) for x in dates] 
+        
+        ohlc_df.index = ohlc_df['Date']
+        return ohlc_df
+
+    def get_epoch_time(self, date):
+        return int(datetime.strptime(date, '%Y-%m-%d').timestamp())
+
+    def yahooDataV8(self):
+        if self.interval not in ["1m", "2m", "5m", "15m", "30m", "1h", "1d","5d", "1wk", "1mo"]:
+            raise ValueError("Invalid Parameter for YahooV8 interval!")
+        
+        start_epoch = self.get_epoch_time(self.start_date)
+        end_epoch = self.get_epoch_time(self.end_date)
+        baseurl = "https://query1.finance.yahoo.com/v8/finance/chart/" + self.symbol
+        url = f"{baseurl}?period1={start_epoch}&period2={end_epoch}&interval={self.interval}&events=history"
+      
+        try:
+            r = requests.get(url, headers=self.header)
+            return self.convert_json_to_df(r.text)
+        except Exception as e:
+            print(e)
+            return None
+
+    def yahooDataV7(self):
+        url = "https://query1.finance.yahoo.com/v7/finance/download/" + self.symbol
+        start_epoch = self.get_epoch_time(self.start_date)
+        end_epoch = self.get_epoch_time(self.end_date)
+        url += "?period1=" + str(start_epoch) + "&period2=" + str(end_epoch) + "&interval=1d&events=history&includeAdjustedClose=true"
+
+        try:
+            r = requests.get(url, headers=self.header)
+            df = pd.read_csv(io.StringIO(r.text), index_col=0, parse_dates=True)
+            return df
+        except Exception as e:
+            print(e)
+            return None
+
+
 if __name__ == "__main__":
-    finage = Finage()
-    print(finage.sp500_change_by_sector())
-    if finage.err_results:
-        print("Error: ", finage.err_results)
+    VIX = OHLC_YahooFinance("^VIX", "2022-12-20", interval="1h")
+    print(VIX.yahooDataV7())
+    # finage = Finage()
+    # print(finage.sp500_change_by_sector())
+    # if finage.err_results:
+    #     print("Error: ", finage.err_results)

@@ -76,11 +76,14 @@ def sector_etf_price_and_changes(api: str):
 @st.cache
 def get_sp500_changes(api: str):
     # get a list of S&P500 companies from wikipedia
+    start_timer = dt.datetime.now()
+    print("getting sp500 data from Finage at: ", start_timer)
     df_sp500_wiki = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
     df_sp500_wiki = df_sp500_wiki[0][["Symbol", "Security", "GICS Sector", "GICS Sub-Industry"]]
     # get the dataframe for S&P500 changes
     setf = Finage(api)
     df_sp500_changes = setf.get_finage_changes(df_sp500_wiki['Symbol'].tolist())
+    print("total time taken to get sp500 data from Finage: ", dt.datetime.now() - start_timer)
     return df_sp500_changes.merge(df_sp500_wiki, left_on='s', right_on='Symbol')
     
 def threeTabs():
@@ -149,7 +152,7 @@ def threeTabs():
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("VIX")
-            fig, current_vix = mw.get_vix_from_yahoo("2019-01-01")
+            fig, current_vix = mw.get_vix_from_yahoo("2019-12-01")
             st.plotly_chart(fig, use_container_width=True)
             st.write(current_vix)
         with col2:
@@ -214,12 +217,15 @@ def threeTabs():
                                 "Six Monthly Percentage Change", "Yearly Percentage Change"],
                                 help="select the period to show the change", index=4, key="sp500_win_lose_change_length")
                 df = get_sp500_changes(inputed_api)
-                # test purpose only
-                # df = pd.read_csv("sp500_changes.csv")
                 df = df.astype({"Last Price": float, change_length: float})
                 df.to_csv("sp500_changes.csv")
                 df = df[df[change_length]>0]
-                print(df)
+                st.subheader("S&P500 Winners")
+                st.plotly_chart(mw.sp500_win_lose_tree(df[["Symbol","Last Price","Security","GICS Sector","GICS Sub-Industry", change_length]]))
+                df = get_sp500_changes(inputed_api)
+                df = df[df[change_length]<0]
+                df[change_length] = df[change_length] * -1
+                st.subheader("S&P500 Losers")
                 st.plotly_chart(mw.sp500_win_lose_tree(df[["Symbol","Last Price","Security","GICS Sector","GICS Sub-Industry", change_length]]))
 
 

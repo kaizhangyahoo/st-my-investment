@@ -4,32 +4,18 @@ import pandas_datareader.data as web
 import plotly.graph_objects as go
 import plotly.express as px
 import datetime as dt
-import requests
 from getEODprice import chunks
+from market_data_api import OHLC_YahooFinance
 
 
 def get_vix_from_yahoo(start_date):
     # df_vix = web.DataReader('^VIX', 'yahoo', start=start_date)
-    header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9 (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9'}
-    epoch_start = int(dt.datetime.strptime(start_date, '%Y-%m-%d').timestamp())
-    base_url = f"https://query1.finance.yahoo.com/v8/finance/chart/^VIX?period1={epoch_start}&period2=9999999999&interval=1d&events=history"
-    try:
-        r = requests.get(base_url, headers=header)
-        p = r.json()
-        dates = p['chart']['result'][0]['timestamp']
-        ohlc_json = p['chart']['result'][0]['indicators']['quote'][0]
-        df_vix = pd.DataFrame.from_dict(ohlc_json)
-        df_vix['Date'] = [dt.datetime.fromtimestamp(x).date() for x in dates]
-        df_vix.index = df_vix['Date']
-    except Exception as e:
-        print(e)
-        return None
-
+    df_vix = OHLC_YahooFinance('^VIX', start_date).yahooDataV7()
     fig = go.Figure(data=[go.Candlestick(x=df_vix.index,
-            open=df_vix['open'],
-            high=df_vix['high'],
-            low=df_vix['low'],
-            close=df_vix['close'])])
+            open=df_vix['Open'],
+            high=df_vix['High'],
+            low=df_vix['Low'],
+            close=df_vix['Adj Close'])])
     fig.update_layout(yaxis_title='VIX', xaxis_title='Date')
     # df_vix.index = df_vix.index.strftime('%Y-%m-%d')
     return fig, df_vix.tail(1)
