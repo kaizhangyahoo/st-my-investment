@@ -67,6 +67,20 @@ def consumer_confidence_from_fred(start_date):
     fig.update_layout(xaxis_title="Year", yaxis_title="Consumer Confidence")
     return fig, df_consumer_confidence.tail(3)
 
+def buffet_indicator_calc_from_fred(start_date: str):
+    indicator_range = [0,0.5,0.75,0.9,1.15,10]
+    indicator_description = ['Very Undervalued', 'Undervalued','Fair Value','Overvalued','Extremely Overvalued']
+    df_gdp = web.DataReader("GDP", "fred", start=start_date)
+    df_wilshire = web.DataReader('WILL5000PR','fred', start=start_date)
+    df_wb = df_wilshire.join(df_gdp, how='left')
+    df_wb['GDP'] = df_wb['GDP'].ffill()
+    df_wb.dropna(subset = ['WILL5000PR'], inplace=True)
+    df_wb['Market Value / GDP'] = df_wb['WILL5000PR'] / df_wb['GDP']
+    df_wb['Indicator-Category'] = pd.cut(df_wb['Market Value / GDP'], indicator_range, labels=indicator_description)
+    fig = px.scatter(df_wb, x=df_wb.index, y="Market Value / GDP", color="Indicator-Category", title="Buffet Indicator")
+    return fig
+
+
 def treasury_curve(start_date):
     ndqk = b'ud--wr-4nbzKnr-5tIzCmZjBo6o'
     nasdaq = enc.decode(enc.cccccccz, ndqk)

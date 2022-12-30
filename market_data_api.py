@@ -18,18 +18,6 @@ class Finage:
         self.err_results = {}
         self.result = []
         self.api_key = api_key
-    
-    # def sp500_change_by_sector(self):
-    #     df_sp500_wiki = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-    #     df_sp500_wiki = df_sp500_wiki[0][["Symbol", "Security", "GICS Sector", "GICS Sub-Industry"]]
-    #     start = time.perf_counter()
-    #     df_sp500_changes = self.get_finage_changes(df_sp500_wiki['Symbol'])
-    #     df_result = df_sp500_changes.merge(df_sp500_wiki, left_on='s', right_on='Symbol')
-    #     df_result_positives = df_result[df_result['Day Pctage Change'] > 0]
-    #     df_result_negatives = df_result[df_result['Day Pctage Change'] < 0]
-    #     end = time.perf_counter()
-    #     print(f"Time taken: {end - start}")
-    #     return df_result_positives, df_result_negatives
 
     def get_finage_changes(self, symbol_list: list) -> pd.DataFrame:
         col_renames = {'lp': 'Last Price', 'cpd': 'Daily Percentage Change', 
@@ -128,7 +116,7 @@ class OHLC_YahooFinance:
 
 
 if __name__ == "__main__":
-    VIX = OHLC_YahooFinance("^VIX", "2022-12-20", interval="1h")
+    VIX = OHLC_YahooFinance("GC=F", "2009-12-28", interval="1d")
     print(VIX.yahooDataV7())
     # finage = Finage()
     # print(finage.sp500_change_by_sector())
