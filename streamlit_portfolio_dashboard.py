@@ -194,6 +194,10 @@ def threeTabs():
             st.write(last3month_consumer_confidence)
         st. write('***')
 
+        st.subheader("[Buffett Indicator](https://www.investopedia.com/terms/m/marketcapgdp.asp)")
+        st.plotly_chart(mw.buffet_indicator_calc_from_fred("1980-01-01"))        
+        st. write('***')
+
         st.subheader("Treasury Yield Curve")
         
         last_business_day = dt.datetime.today() - pd.offsets.BDay(1)
