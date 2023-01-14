@@ -91,7 +91,7 @@ def threeTabs():
     st.title("My Portfolio")
 
 
-    tab1, tab2, tab3 = st.tabs(["Positions", "Macro", "Fire"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Positions", "Macro", "FICC", "Fire"])
 
     with tab1:
         st.header("Upload Trade/Transaction History")
@@ -197,18 +197,6 @@ def threeTabs():
         st.subheader("[Buffett Indicator](https://www.investopedia.com/terms/m/marketcapgdp.asp)")
         st.plotly_chart(mw.buffet_indicator_calc_from_fred("1980-01-01"))        
         st. write('***')
-
-        st.subheader("Treasury Yield Curve")
-        
-        last_business_day = dt.datetime.today() - pd.offsets.BDay(1)
-        # check if last_business_day is a federal holiday
-        cal = USFederalHolidayCalendar()
-        usa_holidays = cal.holidays(start='2022-12-01', end='2028-12-31').date
-        if last_business_day.date() in usa_holidays:
-            last_business_day = dt.datetime.today() - pd.offsets.BDay(2)
-
-        t_curve_date = st.date_input("Select date", last_business_day, help="present or future date show max history").strftime("%Y-%m-%d")
-        st.plotly_chart(mw.treasury_curve(t_curve_date), use_container_width=True)
         
         # TODO: st.subheader("ISM Manufacturing")
 
@@ -242,10 +230,25 @@ def threeTabs():
 
 
 
-
-        
-
     with tab3:
+        st.header("Commodity and Treasury Yield Curve")
+        st.subheader("Treasury Yield Curve")
+        
+        last_business_day = dt.datetime.today() - pd.offsets.BDay(1)
+        # check if last_business_day is a federal holiday
+        cal = USFederalHolidayCalendar()
+        usa_holidays = cal.holidays(start='2022-12-01', end='2028-12-31').date
+        if last_business_day.date() in usa_holidays:
+            last_business_day = dt.datetime.today() - pd.offsets.BDay(2)
+
+        t_curve_date = st.date_input("Select date", last_business_day, help="present or future date show max history, data from NASDAQ data link").strftime("%Y-%m-%d")
+        st.plotly_chart(mw.treasury_curve(t_curve_date), use_container_width=True)
+
+        st.subheader("Gold and Silver")
+        show_recession_highlights = st.checkbox("show recession dates")
+        st.plotly_chart(mw.gold_silver_price(show_recession_highlights), use_container_width=True)
+
+    with tab4:
         st.header("Financial Independent and Retire Early")
         if 'df_transactions' in locals():
             st.write("df_transactions exists in local")
