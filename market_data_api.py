@@ -113,11 +113,28 @@ class OHLC_YahooFinance:
         except Exception as e:
             print(e)
             return None
+    
+class nasdaq_data_link:
+    def __init__(self) -> None:
+        self.base_url = "https://data.nasdaq.com/api/v3/datasets/"
+        self.ndqk = b'ud--wr-4nbzKnr-5tIzCmZjBo6o'
+        self.k = enc.decode(enc.cccccccz, self.ndqk)
+
+    def treasury_yield(self, start_date: str) -> pd.DataFrame:        
+        url = self.base_url + "USTREASURY/YIELD.csv?api_key" + self.k
+        try:
+            df = pd.read_csv(url)
+            df.index = df['Date']
+        except Exception as e:
+            print(e)
+            df = pd.DataFrame()
+        return df
+
 
 
 if __name__ == "__main__":
-    VIX = OHLC_YahooFinance("GC=F", "2009-12-28", interval="1d")
-    print(VIX.yahooDataV7())
+    nsdq = nasdaq_data_link()
+    print(nsdq.treasury_yield("2021-08-08"))
     # finage = Finage()
     # print(finage.sp500_change_by_sector())
     # if finage.err_results:

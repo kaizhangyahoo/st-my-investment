@@ -100,6 +100,26 @@ def treasury_curve(start_date):
         plot = px.line(df_treasuries_yield, x=df_treasuries_yield.index, y=df_treasuries_yield.columns, title='Treasury rates full history')
         return plot
 
+def gold_silver_price(highlight_recession=False):
+    ndqk = b'ud--wr-4nbzKnr-5tIzCmZjBo6o'
+    nasdaq = enc.decode(enc.cccccccz, ndqk)
+    df_gold = pd.read_csv(f"https://data.nasdaq.com/api/v3/datasets/LBMA/GOLD.csv?api_key={nasdaq}")
+    df_silver = pd.read_csv(f"https://data.nasdaq.com/api/v3/datasets/LBMA/SILVER.csv?api_key={nasdaq}")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df_gold['Date'], y=df_gold['USD (PM)'], name="Gold"))
+    fig.add_trace(go.Scatter(x=df_silver['Date'], y=df_silver['USD'], name="Silver", yaxis="y2"))
+    y2 = go.layout.YAxis(side='right', overlaying='y', title='Silver')
+    fig.update_layout(yaxis2=y2, title='Gold and Silver prices')
+    if highlight_recession:
+        fig.add_vrect(x0="2020-02-11", x1="2020-05-31", fillcolor="LightSalmon", opacity=0.5, line_width=0)
+        fig.add_vrect(x0="2007-12-01", x1="2009-06-01", fillcolor="LightSalmon", opacity=0.5, line_width=0)
+        fig.add_vrect(x0="2001-03-01", x1="2001-11-01", fillcolor="LightSalmon", opacity=0.5, line_width=0)
+        fig.add_vrect(x0="1990-07-01", x1="1991-03-01", fillcolor="LightSalmon", opacity=0.5, line_width=0)
+        fig.add_vrect(x0="1981-07-01", x1="1982-11-01", fillcolor="LightSalmon", opacity=0.5, line_width=0)
+        fig.add_vrect(x0="1973-11-01", x1="1975-03-01", fillcolor="LightSalmon", opacity=0.5, line_width=0)
+        fig.add_vrect(x0="1969-12-01", x1="1970-11-01", fillcolor="LightSalmon", opacity=0.5, line_width=0)
+    return fig
+
 
 def sp500_winner_loser_treemap():
     """ Treemap continous color scale: https://plotly.com/python/builtin-colorscales/#continuous-color-scales-in-dash
