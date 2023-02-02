@@ -48,7 +48,7 @@ def getEODpriceUSA(L) -> dict:
     return usa_close_price
 
 def getEODpriceUK(L) -> dict:
-    if datetime.now().hour < 17.5:
+    if datetime.now().hour < 22.5:
         last_business_day = np.busday_offset('today', -1, roll='backward')
     else:
         last_business_day = np.busday_offset('today', 0, roll='backward')
