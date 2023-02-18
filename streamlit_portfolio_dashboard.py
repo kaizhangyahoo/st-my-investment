@@ -135,9 +135,12 @@ def threeTabs():
                     type_dict = {'Date': 'datetime64', 'PL Amount': 'float', 'Summary': 'category', 'Transaction type': 'category', 'Cash transaction': 'boolean', 'MarketName': 'string'}
                     df_transactions = df_transactions.astype(type_dict)
                     df_transactions['Date'] = pd.to_datetime(df_transactions['Date'], format='%Y-%m-%d')
-                    df_transactions.set_index('Date', inplace=True)
+                    # df_transactions.set_index('Date', inplace=True)
                     df_cashIn = df_transactions[(df_transactions['Summary']=='Cash In') | (df_transactions['MarketName'] == 'Bank Deposit')]
                     df_cashIn.rename(columns={'ProfitAndLoss': 'Deposits'}, inplace=True)
+                    df_cashIn['Date'] = df_cashIn['Date'].dt.strftime('%Y-%m-%d')
+                    df_cashIn.set_index('Date', inplace=True)
+                    print(df_cashIn['Deposits'])
                     st.metric(label="Total Cash Deposit in GBP", value=df_cashIn['PL Amount'].sum())
                     with st.expander("Cash In Details"):
                         st.table(df_cashIn['Deposits'])
