@@ -93,11 +93,15 @@ def treasury_curve(start_date):
         fig.add_vrect(x0="1 MO", x1="1 YR", fillcolor="LightSalmon", opacity=0.5, line_width=0, annotation_text = "Bill", annotation_position="top left")
         fig.add_vrect(x0="2 YR", x1="5 YR", fillcolor="LightGreen", opacity=0.5, line_width=0, annotation_text = "Note", annotation_position="top left")
         fig.add_vrect(x0="7 YR", x1="30 YR", fillcolor="LightBlue", opacity=0.5, line_width=0, annotation_text = "Bond", annotation_position="top left")
-        return fig
+        return fig       
     else:
-        df_treasuries_yield = pd.read_csv(f"https://data.nasdaq.com/api/v3/datasets/USTREASURY/YIELD.csv?api_key={nasdaq}")
-        df_treasuries_yield = df_treasuries_yield.set_index('Date')
-        plot = px.line(df_treasuries_yield, x=df_treasuries_yield.index, y=df_treasuries_yield.columns, title='Treasury rates full history')
+        df_treasuries_yield = pd.read_csv(f"https://data.nasdaq.com/api/v3/datasets/USTREASURY/YIELD.csv?api_key={nasdaq}")       
+        if start_date == dt.datetime.today().strftime('%Y-%m-%d'): 
+            df_long=pd.melt(df_treasuries_yield, id_vars=['Date'], value_vars=['1 MO', '3 MO', '6 MO', '1 YR', '2 YR', '3 YR', '5 YR', '7 YR', '10 YR', '20 YR', '30 YR'])
+            plot = px.line(df_long, x="variable", y="value", range_y=[df_long["value"].min(), df_long["value"].max()], animation_frame="Date", title="Treasury Yields")
+        else:
+            df_treasuries_yield = df_treasuries_yield.set_index('Date')
+            plot = px.line(df_treasuries_yield, x=df_treasuries_yield.index, y=df_treasuries_yield.columns, title='Treasury rates full history')
         return plot
 
 def gold_silver_price(highlight_recession=False):
