@@ -66,6 +66,7 @@ def getEODpriceUK(L) -> dict:
 def main():
     L1 = ['PAY.L', 'SDR.L']
     print(getEODpriceUK(L1))
+    print(getEODpriceUSA(["MSCI", "FDS"]))
 
 
 if __name__ == "__main__":

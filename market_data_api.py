@@ -133,9 +133,11 @@ class nasdaq_data_link:
 
 
 if __name__ == "__main__":
-    nsdq = nasdaq_data_link()
-    print(nsdq.treasury_yield("2021-08-08"))
+    # nsdq = nasdaq_data_link()
+    # print(nsdq.treasury_yield("2021-08-08"))
     # finage = Finage()
     # print(finage.sp500_change_by_sector())
     # if finage.err_results:
     #     print("Error: ", finage.err_results)
+    payp = OHLC_YahooFinance("PAY.L", "2023-01-01")
+    print(payp.yahooDataV7())
