@@ -32,7 +32,7 @@ def color_green_red(val):
     color = 'green' if val > 0 else 'red'
     return f'background-color: {color}'
 
-@st.cache
+@st.cache_data
 def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:
     """Calculate open position and costs for each ticker"""
     df = replace_duplicated_ticker(df_in).drop(columns=['Settlement date'])
@@ -62,7 +62,7 @@ def format_df_for_display(df_in: pd.DataFrame) -> pd.DataFrame:
     df_op_display.rename(columns=column_rename, inplace=True)
     return df_op_display.sort_values('Quantity', ascending=False)
 
-@st.cache
+@st.cache_data
 def sector_etf_price_and_changes(api: str):
     vanguard_etf = ['VGT', 'VHT','VCR', 'VOX', 'VFH', 'VIS', 'VDC', 'VPU', 'VAW', 'VNQ', 'VDE', 'VOO']
     sectors = ['Information Technology', 'Health Care', 'Consumer Discretionary', 'Communication Services', 
@@ -74,7 +74,7 @@ def sector_etf_price_and_changes(api: str):
     df_sector_ETF_change.set_index("s", inplace=True)
     return df_sector_ETF_change
 
-@st.cache
+@st.cache_data
 def get_sp500_changes(api: str):
     # get a list of S&P500 companies from wikipedia
     start_timer = dt.datetime.now()
