@@ -44,16 +44,19 @@ def pdf_to_dataframe(pdf_path: str) -> pd.DataFrame:
     print("Start reading pdf file...")
     alltext = ""
     try:
-        with open(pdf_path, 'rb') as f:
-            pdfReader = PyPDF2.PdfFileReader(f)
-            for i in tqdm.tqdm(range(pdfReader.numPages)):
-                pageObj = pdfReader.getPage(i)
-                alltext += pageObj.extractText()
+        pdfReader = PyPDF2.PdfReader(pdf_path)
     except:
         print("Error: can not open pdf")
         return {}
     
-    print(f"total time to read {pdfReader.numPages} pages pdf: {datetime.now() - start}")
+    try:
+        for page in tqdm.tqdm(pdfReader.pages):
+            alltext += page.extract_text()
+    except:
+        print("Error: can not extract text from pdf")
+        return {}
+    
+    print(f"total time to read {len(pdfReader.pages)} pages pdf: {datetime.now() - start}")
 
     mapping_lines = []
     for i in re.split(r'\n', alltext):    
