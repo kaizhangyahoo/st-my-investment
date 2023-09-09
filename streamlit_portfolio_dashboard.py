@@ -35,7 +35,7 @@ def color_green_red(val):
 @st.cache
 def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:
     """Calculate open position and costs for each ticker"""
-    df = replace_duplicated_ticker(df_in)
+    df = replace_duplicated_ticker(df_in).drop(columns=['Settlement date'])
     df_op = df.groupby(['Market','Ticker']).sum()
     symbols_with_position = df_op[df_op['Quantity'] > 0].index.get_level_values('Ticker').tolist()
     us_symbols_with_position = [x for x in symbols_with_position if x.count('.') == 0]
@@ -132,7 +132,7 @@ def threeTabs():
                     st.write(df_transactions.head())
 
                     df_transactions['PL Amount'] = df_transactions['PL Amount'].str.replace(',','')
-                    type_dict = {'Date': 'datetime64', 'PL Amount': 'float', 'Summary': 'category', 'Transaction type': 'category', 'Cash transaction': 'boolean', 'MarketName': 'string'}
+                    type_dict = {'Date': 'datetime64[s]', 'PL Amount': 'float', 'Summary': 'category', 'Transaction type': 'category', 'Cash transaction': 'boolean', 'MarketName': 'string'}
                     df_transactions = df_transactions.astype(type_dict)
                     df_transactions['Date'] = pd.to_datetime(df_transactions['Date'], format='%Y-%m-%d')
                     # df_transactions.set_index('Date', inplace=True)
