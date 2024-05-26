@@ -237,12 +237,12 @@ def threeTabs():
         st.header("Commodity and Treasury Yield Curve")
         st.subheader("Treasury Yield Curve")
         
-        last_business_day = dt.datetime.today() - pd.offsets.BDay(1)
+        last_business_day = dt.datetime.today() - pd.offsets.BDay(2)
         # check if last_business_day is a federal holiday
         cal = USFederalHolidayCalendar()
         usa_holidays = cal.holidays(start='2022-12-01', end='2028-12-31').date
         if last_business_day.date() in usa_holidays:
-            last_business_day = dt.datetime.today() - pd.offsets.BDay(2)
+            last_business_day = dt.datetime.today() - pd.offsets.BDay(3)
 
         t_curve_date = st.date_input("Select date", last_business_day, help="present or future date show max history, data from NASDAQ data link").strftime("%Y-%m-%d")
         st.plotly_chart(mw.treasury_curve(t_curve_date), use_container_width=True)
