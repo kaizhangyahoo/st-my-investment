@@ -82,20 +82,21 @@ def buffet_indicator_calc_from_fred(start_date: str):
 
 
 def treasury_curve(start_date):
-    ndqk = b'ud--wr-4nbzKnr-5tIzCmZjBo6o'
-    nasdaq = enc.decode(enc.cccccccz, ndqk)
+    treasury_codes_mapping = {'DGS1MO': '1 MO', 'DGS3MO': '3MO', 'DGS6MO': '6 MO', 'DGS1': '1 YR', 'DGS2': '2 YR', 'DGS3': '3 YR', 'DGS5': '5 YR', 'DGS7': '7 YR', 'DGS10': '10 YR', 'DGS20': '20 YR', 'DGS30': '30 YR'}
+    treasury_yield = pd.DataFrame()
 
     if start_date < dt.datetime.today().strftime('%Y-%m-%d'):        
-        df_treasuries_yield = pd.read_csv(f"https://data.nasdaq.com/api/v3/datasets/USTREASURY/YIELD.csv?api_key={nasdaq}&start_date={start_date}")
-        df_treasuries_yield = df_treasuries_yield.set_index('Date')
-        df_treasuries_yield.index = pd.to_datetime(df_treasuries_yield.index)
-        fig = go.Figure(go.Scatter(x=df_treasuries_yield.columns, y=df_treasuries_yield.loc[start_date]))
+        for code, maturity in treasury_codes_mapping.items():
+            data = web.DataReader(code, 'fred', start_date)
+            treasury_yield[maturity] = data[code]
+
+        fig = go.Figure(go.Scatter(x=treasury_yield.columns, y=treasury_yield.loc[start_date]))
         fig.add_vrect(x0="1 MO", x1="1 YR", fillcolor="LightSalmon", opacity=0.5, line_width=0, annotation_text = "Bill", annotation_position="top left")
         fig.add_vrect(x0="2 YR", x1="5 YR", fillcolor="LightGreen", opacity=0.5, line_width=0, annotation_text = "Note", annotation_position="top left")
         fig.add_vrect(x0="7 YR", x1="30 YR", fillcolor="LightBlue", opacity=0.5, line_width=0, annotation_text = "Bond", annotation_position="top left")
         return fig       
     else:
-        df_treasuries_yield = pd.read_csv(f"https://data.nasdaq.com/api/v3/datasets/USTREASURY/YIELD.csv?api_key={nasdaq}")       
+        df_treasuries_yield = treasury_yield       
         if start_date == dt.datetime.today().strftime('%Y-%m-%d'): 
             df_long=pd.melt(df_treasuries_yield, id_vars=['Date'], value_vars=['1 MO', '3 MO', '6 MO', '1 YR', '2 YR', '3 YR', '5 YR', '7 YR', '10 YR', '20 YR', '30 YR'])
             plot = px.line(df_long, x="variable", y="value", range_y=[df_long["value"].min(), df_long["value"].max()], animation_frame="Date", title="Treasury Yields")

@@ -16,5 +16,5 @@ def decode(key, string):
     return encoded_string
 
 if __name__ == "__main__":
-    scramble = b'tbW808C4vtO8o6urmH15lnjCucbHxb6Ys2uIpcKbvsnHpbqiq5yr'
+    scramble = b'ud--wr-4nbzKnr-5tIzCmZjBo6o'
     print(decode(cccccccz, scramble))
