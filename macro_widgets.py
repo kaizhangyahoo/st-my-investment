@@ -96,13 +96,16 @@ def treasury_curve(start_date):
         fig.add_vrect(x0="7 YR", x1="30 YR", fillcolor="LightBlue", opacity=0.5, line_width=0, annotation_text = "Bond", annotation_position="top left")
         return fig       
     else:
-        df_treasuries_yield = treasury_yield       
+        for code, maturity in treasury_codes_mapping.items():
+            data = web.DataReader(code, 'fred', (dt.datetime.today() - dt.timedelta(days=90)).strftime('%Y-%m-%d')) # get the last 5 days data
+            treasury_yield[maturity] = data[code]
         if start_date == dt.datetime.today().strftime('%Y-%m-%d'): 
-            df_long=pd.melt(df_treasuries_yield, id_vars=['Date'], value_vars=['1 MO', '3 MO', '6 MO', '1 YR', '2 YR', '3 YR', '5 YR', '7 YR', '10 YR', '20 YR', '30 YR'])
-            plot = px.line(df_long, x="variable", y="value", range_y=[df_long["value"].min(), df_long["value"].max()], animation_frame="Date", title="Treasury Yields")
+            df_long=pd.melt(treasury_yield.reset_index(), id_vars=['DATE'], value_vars=treasury_codes_mapping.values())
+            plot = px.line(df_long, x="variable", y="value", range_y=[df_long["value"].min(), df_long["value"].max()], animation_frame="DATE", title="Treasury Yields")
         else:
-            df_treasuries_yield = df_treasuries_yield.set_index('Date')
-            plot = px.line(df_treasuries_yield, x=df_treasuries_yield.index, y=df_treasuries_yield.columns, title='Treasury rates full history')
+            # TODO: handle date in the future
+            treasuries_yield = treasuries_yield.set_index('Date')
+            plot = px.line(treasuries_yield, x=treasuries_yield.index, y=treasuries_yield.columns, title='Treasury rates full history')
         return plot
 
 def gold_silver_price(highlight_recession=False):
