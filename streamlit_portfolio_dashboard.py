@@ -86,6 +86,16 @@ def get_sp500_changes(api: str):
     df_sp500_changes = setf.get_finage_changes(df_sp500_wiki['Symbol'].tolist())
     print("total time taken to get sp500 data from Finage: ", dt.datetime.now() - start_timer)
     return df_sp500_changes.merge(df_sp500_wiki, left_on='s', right_on='Symbol')
+
+def apply_stripe_style_to_df(df):
+    """Apply stripe effect to dataframe for display in streamlit."""
+    styles = []
+    for index in df.index:
+        if index % 2 == 0:
+            styles.append("background-color: #f2f2f2")
+        else:
+            styles.append("")
+    return styles
     
 def threeTabs():
     st.title("My Portfolio")
@@ -115,7 +125,9 @@ def threeTabs():
                     market_list = df_trade_history['Market'].unique()
                     market = st.selectbox("Select Stock", market_list)
                     st.subheader("Trade history for {}".format(market))
-                    st.dataframe(df_trade_history[df_trade_history['Market'] == market])
+                    df_filtered_market = df_trade_history[df_trade_history['Market'] == market].reset_index(drop=True)
+                    df_styled = df_filtered_market.style.apply(apply_stripe_style_to_df, axis=0)
+                    st.dataframe(df_styled)
 
                     df_op_has_position = df_op[df_op['Quantity'] > 0]
                     if market in df_op_has_position.index.get_level_values('Market'):
@@ -132,8 +144,9 @@ def threeTabs():
                     st.write(df_transactions.head())
 
                     df_transactions['PL Amount'] = df_transactions['PL Amount'].str.replace(',','')
-                    type_dict = {'Date': 'datetime64[s]', 'PL Amount': 'float', 'Summary': 'category', 'Transaction type': 'category', 'Cash transaction': 'boolean', 'MarketName': 'string'}
+                    type_dict = {'TextDate': 'datetime64[s]', 'PL Amount': 'float', 'Summary': 'category', 'Transaction type': 'category', 'Cash transaction': 'boolean', 'MarketName': 'string'}
                     df_transactions = df_transactions.astype(type_dict)
+                    df_transactions['Date'] = df_transactions['TextDate']
                     df_transactions['Date'] = pd.to_datetime(df_transactions['Date'], format='%Y-%m-%d')
                     # df_transactions.set_index('Date', inplace=True)
                     df_cashIn = df_transactions[(df_transactions['Summary']=='Cash In') | (df_transactions['MarketName'] == 'Bank Deposit')]
@@ -197,11 +210,11 @@ def threeTabs():
             st.write(last3month_consumer_confidence)
         st. write('***')
 
-        st.subheader("[Buffett Indicator](https://www.investopedia.com/terms/m/marketcapgdp.asp)")
-        st.plotly_chart(mw.buffet_indicator_calc_from_fred("1980-01-01"))        
-        st. write('***')
+        # st.subheader("[Buffett Indicator](https://www.investopedia.com/terms/m/marketcapgdp.asp)")
+        # st.plotly_chart(mw.buffet_indicator_calc_from_fred("1980-01-01"))        
+        # st. write('***')
         
-        # TODO: st.subheader("ISM Manufacturing")
+        # # TODO: st.subheader("ISM Manufacturing")
 
         inputed_api = st.text_input("Enter API key to access changes in sectors", value="finage api key", max_chars=100, help="register at https://moon.finage.co.uk/register")
         if (inputed_api != "finage api key") and (inputed_api != ""):
@@ -237,19 +250,19 @@ def threeTabs():
         st.header("Commodity and Treasury Yield Curve")
         st.subheader("Treasury Yield Curve")
         
-        last_business_day = dt.datetime.today() - pd.offsets.BDay(2)
+        last_business_day = dt.datetime.today() - pd.offsets.BDay(3)
         # check if last_business_day is a federal holiday
         cal = USFederalHolidayCalendar()
         usa_holidays = cal.holidays(start='2022-12-01', end='2028-12-31').date
         if last_business_day.date() in usa_holidays:
-            last_business_day = dt.datetime.today() - pd.offsets.BDay(3)
+            last_business_day = dt.datetime.today() - pd.offsets.BDay(5)
 
         t_curve_date = st.date_input("Select date", last_business_day, help="present or future date show max history, data from NASDAQ data link").strftime("%Y-%m-%d")
         st.plotly_chart(mw.treasury_curve(t_curve_date), use_container_width=True)
 
         st.subheader("Gold and Silver")
         show_recession_highlights = st.checkbox("show recession dates")
-        st.plotly_chart(mw.gold_silver_price(show_recession_highlights), use_container_width=True)
+        # st.plotly_chart(mw.gold_silver_price(show_recession_highlights), use_container_width=True)
 
     with tab4:
         st.header("Financial Independent and Retire Early")

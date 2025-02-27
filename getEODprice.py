@@ -58,8 +58,8 @@ def getEODpriceUK(L) -> dict:
         # close_price = web.DataReader(i, 'yahoo', last_business_day)['Adj Close'][-1]
         print(str(last_business_day))
         close_price = OHLC_YahooFinance(i, str(last_business_day))
-        print(close_price.yahooDataV7())
-        uk_close_price[i] = close_price.yahooDataV7()['Close'][-1]/100
+        # print(close_price.yahooDataV7())
+        uk_close_price[i] = close_price.yahooDataV8()['close'][-1]/100
     return uk_close_price
 
 

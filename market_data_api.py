@@ -100,19 +100,20 @@ class OHLC_YahooFinance:
             print(e)
             return None
 
-    def yahooDataV7(self):
-        url = "https://query1.finance.yahoo.com/v7/finance/download/" + self.symbol
-        start_epoch = self.get_epoch_time(self.start_date)
-        end_epoch = self.get_epoch_time(self.end_date)
-        url += "?period1=" + str(start_epoch) + "&period2=" + str(end_epoch) + "&interval=1d&events=history&includeAdjustedClose=true"
+    # def yahooDataV7(self):
+    #     url = "https://query1.finance.yahoo.com/v7/finance/download/" + self.symbol
+    #     start_epoch = self.get_epoch_time(self.start_date)
+    #     end_epoch = self.get_epoch_time(self.end_date)
+    #     url += "?period1=" + str(start_epoch) + "&period2=" + str(end_epoch) + "&interval=1d&events=history&includeAdjustedClose=true"
+    #     print(url)
 
-        try:
-            r = requests.get(url, headers=self.header)
-            df = pd.read_csv(io.StringIO(r.text), index_col=0, parse_dates=True)
-            return df
-        except Exception as e:
-            print(e)
-            return None
+    #     try:
+    #         r = requests.get(url, headers=self.header)
+    #         df = pd.read_csv(io.StringIO(r.text), index_col=0, parse_dates=True)
+    #         return df
+    #     except Exception as e:
+    #         print(e)
+    #         return None
     
 class nasdaq_data_link:
     def __init__(self) -> None:
