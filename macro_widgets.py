@@ -10,12 +10,12 @@ from market_data_api import OHLC_YahooFinance
 
 def get_vix_from_yahoo(start_date):
     # df_vix = web.DataReader('^VIX', 'yahoo', start=start_date)
-    df_vix = OHLC_YahooFinance('^VIX', start_date).yahooDataV7()
+    df_vix = OHLC_YahooFinance('^VIX', start_date).yahooDataV8()
     fig = go.Figure(data=[go.Candlestick(x=df_vix.index,
-            open=df_vix['Open'],
-            high=df_vix['High'],
-            low=df_vix['Low'],
-            close=df_vix['Adj Close'])])
+            open=df_vix['open'],
+            high=df_vix['high'],
+            low=df_vix['low'],
+            close=df_vix['close'])])
     fig.update_layout(yaxis_title='VIX', xaxis_title='Date')
     # df_vix.index = df_vix.index.strftime('%Y-%m-%d')
     return fig, df_vix.tail(1)
