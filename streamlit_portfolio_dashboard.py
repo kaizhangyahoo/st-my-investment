@@ -33,7 +33,7 @@ def color_green_red(val):
     return f'background-color: {color}'
 
 @st.cache_data
-def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:
+def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:  #TODO: rewrite a new open position table
     """Calculate open position and costs for each ticker"""
     df = replace_duplicated_ticker(df_in).drop(columns=['Settlement date'])
     df_op = df.groupby(['Market','Ticker']).sum()

@@ -17,7 +17,7 @@
     "Energy Transfer Equity LP": "ET",
     "Intuitive Surgical Inc": "ISRG",
     "Gilead Sciences Inc (All Sessions)": "GILD",
-    "Morgan Stanley": "MS",
+    "Morgan Stanley": "MS-PP",
     "Veeva Systems Inc": "VEEV",
     "VG Acquisition Corporation (Ord)": "ME",
     "Akamai Technologies Inc": "AKAM",
@@ -49,10 +49,11 @@
     "Editas Medicine Inc": "EDIT",
     "Honeywell International Inc": "HON",
     "Kaiser Aluminum Corp": "KALU",
-    "Apple Inc (All Sessions)": "APC.DE",
+    "Apple Inc (All Sessions)": "AAPL",
     "Unity Software Inc": "U",
     "Solventum Corp": "SOLV",
     "Atkore International Group Inc": "ATKR",
     "RTX Corporation": "RTX",
-    "TransMedics Group Inc": "TMDX"
+    "TransMedics Group Inc": "TMDX",
+    "NVIDIA Corp (All Sessions)": "NVDA"
 }

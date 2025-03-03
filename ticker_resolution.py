@@ -7,6 +7,7 @@ import PyPDF2
 from datetime import datetime
 from difflib import get_close_matches
 import tqdm
+import requests
 
 # reference_data_json_file = sys.path[0] + '/company_name_to_ticker.json'
 pwd = os.path.dirname(os.path.realpath(__file__))
@@ -19,23 +20,39 @@ def load_ticker_from_json(json_file: str, df_in: pd.DataFrame) -> pd.DataFrame:
             ticker_dict = json.load(f)
     except FileNotFoundError:
         print(f"Error: {json_file} not found")
+        df_in['Ticker'] = np.nan
         return df_in
-    for k, v in ticker_dict.items():
-        df_in.loc[df_in['Market'] == k, 'Ticker'] = v
+    # for k, v in ticker_dict.items():
+    #     df_in.loc[df_in['Market'] == k, 'Ticker'] = v
+    df_in['Ticker'] = df_in['Market'].map(ticker_dict)
     return df_in
 
 def get_sec_tickers() -> dict:
-    # get json from sec site and convert to dict    
+    # get json from sec site and convert to dict
+    url = "https://www.sec.gov/files/company_tickers.json"
+    request_headers = {
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "priority": "u=0, i",
+    "sec-ch-ua": '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "none",
+    "sec-fetch-user": "?1",
+    "upgrade-insecure-requests": "1",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+    }
     try:
-        sec_site_mapping = pd.read_json(r'https://www.sec.gov/files/company_tickers.json', orient='index')
+        response = requests.get(url, headers=request_headers, allow_redirects=True)
+        list_of_dicts = [value for value in response.json().values()]
     except:
-        print("Error: can not get to sec tickers from https://www.sec.gov/files/company_tickers.json")
+        print("Error: CANNOT get to sec tickers from https://www.sec.gov/files/company_tickers.json")
         return {}
+    sec_site_mapping = pd.DataFrame(list_of_dicts)
     sec_site_mapping['title'] = sec_site_mapping['title'].str.replace('\.', '', regex=True)
     sec_site_mapping['title'] = sec_site_mapping['title'].str.replace('\,', '', regex=True)
     return dict(zip(sec_site_mapping['title'], sec_site_mapping['ticker']))   
-
-
 
 
 def pdf_to_dataframe(pdf_path: str) -> pd.DataFrame:
@@ -142,9 +159,11 @@ def match_tickers_dict(ticker_dict: dict, df_in: pd.DataFrame, close_match=False
         return df_in, resolved
 
     if 'TPname' not in df_in.columns:
-        df_in['TPname'] = df_in['Market'].str.replace(r'\(.*\)', '', regex=True).str.strip()
+        df_in['TPname'] = df_in['Market'].str.replace(r'\(.*\)', '', regex=True).str.strip().str.upper()
+
+    TICKER_dict = {k.upper(): v for k, v in ticker_dict.items()}
     
-    df_in['Ticker'] = df_in['TPname'].map(ticker_dict).fillna(df_in['Ticker'])
+    df_in['Ticker'] = df_in['TPname'].map(TICKER_dict).fillna(df_in['Ticker']) #TODO: potential bug to overwrite the correct symbol in json file
     df_resolved = df_in[df_in['Ticker'].notna()]
     print(df_resolved.drop_duplicates(subset=['Market', 'Ticker'])[['Market', 'Ticker']])
     add_ticker_to_json(dict(zip(df_resolved['Market'], df_resolved['Ticker'])), reference_data_json_file)
@@ -182,14 +201,13 @@ def ticker_by_keyword(unresolved_tpname: list, tickers_dict: dict) -> dict:
 def add_ticker(df_in: pd.DataFrame, output_json_file = reference_data_json_file) -> pd.DataFrame:
     total_instruments = len(df_in['Market'].unique())    
 
-    if 'Ticker' not in df_in.columns:
-        df_in['Ticker'] = np.nan 
-    else:
+    if 'Ticker' in df_in.columns:
         print("csv already has ticker in it, no need to add ticker")
         return df_in
 
     # add ticker from json file
     df_in = load_ticker_from_json(reference_data_json_file, df_in)
+    # check if df_in['Ticker] has na
     ttl_resolved_instrument = len(df_in[df_in['Ticker'].notna()]['Market'].unique()) 
     if ttl_resolved_instrument == total_instruments:
         print("all instruments resolved from json file")
@@ -197,7 +215,7 @@ def add_ticker(df_in: pd.DataFrame, output_json_file = reference_data_json_file)
     else:
         print(f"Total instruments resolved from json file: {ttl_resolved_instrument} out of {total_instruments}")
 
-    # add ticker from sec site
+    # add ticker from SEC site
     sec_tickers = get_sec_tickers()
     df_in, ttl_resolved_instrument = match_tickers_dict(sec_tickers, df_in)
     print(f"Total instruments resolved after appending sec site: {ttl_resolved_instrument} out of {total_instruments}")
