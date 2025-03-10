@@ -14,7 +14,7 @@ def replace_duplicated_ticker(df_in: pd.DataFrame) -> pd.DataFrame:
     The dataframe then would be ready for the position calculation"""
     # st.write(os.path.dirname(os.path.realpath(__file__)) + '/company_name_to_ticker.json')
     df = tr.add_ticker(df_in).sort_values('Settlement date', ascending=False)
-    df_find_dup_ticker = df[['Ticker','Market', 'Settlement date']].drop_duplicates(subset=['Ticker','Market'], keep='first')
+    df_find_dup_ticker = df[['Ticker','Market', 'Settlement date']].drop_duplicates(subset=['Ticker','Market'], keep='first') # TODO: potential bug for RTX etc
     df_find_dup_ticker = df_find_dup_ticker[df_find_dup_ticker.duplicated(subset=['Ticker'], keep=False)].sort_values('Settlement date', ascending=False)
     df_find_dup_ticker = df_find_dup_ticker.reset_index(drop=True)
     for i in df_find_dup_ticker['Market'][1:len(df_find_dup_ticker)]:
@@ -39,7 +39,7 @@ def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:  #TODO: rewrite a n
     df_op = df.groupby(['Market','Ticker']).sum()
     symbols_with_position = df_op[df_op['Quantity'] > 0].index.get_level_values('Ticker').tolist()
     us_symbols_with_position = [x for x in symbols_with_position if x.count('.') == 0]
-    uk_symbols_with_position = [x for x in symbols_with_position if x[-2:] == '.L'] # todo: add more market in other region in future
+    uk_symbols_with_position = [x for x in symbols_with_position if x[-2:] == '.L'] # TODO: add more market in other region in future
     all_symbols_close_price = {**g12.getEODpriceUSA(us_symbols_with_position), **g12.getEODpriceUK(uk_symbols_with_position)}
     df_op['Last Close'] = df_op.index.get_level_values("Ticker").map(all_symbols_close_price).astype(float)
     df_op['current position'] = df_op['Quantity'] * df_op['Last Close']
