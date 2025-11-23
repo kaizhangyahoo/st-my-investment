@@ -1,8 +1,7 @@
-numpy<2.0
-pandas==2.2.3
-pandas-datareader==0.10.0
-plotly==5.22.0
-PyPDF2==3.0.1
-requests==2.31.0
+pandas
+pandas-datareader
+plotly
+PyPDF2
+requests
 streamlit==1.43.1
-tqdm==4.66.1
+tqdm
