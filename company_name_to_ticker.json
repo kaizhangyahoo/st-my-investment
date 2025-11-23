@@ -17,7 +17,7 @@
     "Energy Transfer Equity LP": "ET",
     "Intuitive Surgical Inc": "ISRG",
     "Gilead Sciences Inc (All Sessions)": "GILD",
-    "Morgan Stanley": "MS-PP",
+    "Morgan Stanley": "MS",
     "Veeva Systems Inc": "VEEV",
     "VG Acquisition Corporation (Ord)": "ME",
     "Akamai Technologies Inc": "AKAM",
@@ -55,5 +55,9 @@
     "Atkore International Group Inc": "ATKR",
     "RTX Corporation": "RTX",
     "TransMedics Group Inc": "TMDX",
-    "NVIDIA Corp (All Sessions)": "NVDA"
+    "NVIDIA Corp (All Sessions)": "NVDA",
+    "Okta Inc (Extended Hours)": "OKTA",
+    "MP Materials Corp (All Sessions)": "MP",
+    "Synopsys Inc": "SNPS",
+    "Carl Zeiss Meditec AG": "AFX.DE"
 }
