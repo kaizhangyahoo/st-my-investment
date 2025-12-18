@@ -8,7 +8,7 @@ from getEODprice import getEODpriceUK, getEODpriceUSA
 from plotly import express as px
 import rewrite_plot_portfolio_weights as ppw
 
-
+@st.cache_data
 def get_current_price(tickers: list) -> dict:
     eu_tickers = [ticker for ticker in tickers if ticker.endswith('.L') or ticker.endswith('.DE')]
     us_tickers = [ticker for ticker in tickers if '.' not in ticker]
@@ -39,7 +39,7 @@ def color_green_red(val):
 #             matches.append(f"{company_name} ({ticker})")
 #     return matches
 
-@st.fragment
+# @st.fragment
 def single_ticker_trade_history_section(df_trade_history_not_null, company_name_to_ticker):
     """Only this section reruns when selectbox changes"""
     if "selected_company" not in st.session_state:
@@ -202,11 +202,11 @@ if uploaded_file is not None:
             }).map(color_green_red, subset=['PandL GBP']), height=800)
 
             
-            # single ticker trade history section
+            # single ticker trade history section TODO: buggy, eg B, snps, ansys, etc
             selected_instrument = single_ticker_trade_history_section(df_trade_history_not_null, company_name_to_ticker)
 
 
-            # plot portfolio weights
+            # plot portfolio weights TODO: buggy, eg use any symbol highlight won't work
             standout = [0.0] * len(df_current_positions)  # selected instrument highlight
             instruments_list = df_current_positions['Market'].tolist()
             if selected_instrument in instruments_list:
