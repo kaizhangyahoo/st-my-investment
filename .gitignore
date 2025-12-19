@@ -1,1 +1,4 @@
 __pycache__/*
+.venv/*
+no_git_push.json
+ig/__pycache__/*
