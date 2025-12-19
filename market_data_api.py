@@ -95,10 +95,11 @@ class OHLC_YahooFinance:
       
         try:
             r = requests.get(url, headers=self.header)
+            r.raise_for_status()  # raises HTTPError for bad status codes
             return self.convert_json_to_df(r.text)
-        except Exception as e:
-            print(e)
-            return None
+        except requests.RequestException as e:
+            print(f"API request failed: {e}")
+            raise  # re-raise so caller knows it failed
 
     # def yahooDataV7(self):
     #     url = "https://query1.finance.yahoo.com/v7/finance/download/" + self.symbol
@@ -136,9 +137,9 @@ class nasdaq_data_link:
 if __name__ == "__main__":
     # nsdq = nasdaq_data_link()
     # print(nsdq.treasury_yield("2021-08-08"))
-    finage = Finage()
-    print(finage.sp500_change_by_sector())
+    # finage = Finage()
+    # print(finage.sp500_change_by_sector())
     # if finage.err_results:
     #     print("Error: ", finage.err_results)
-    # payp = OHLC_YahooFinance("PAY.L", "2023-01-01")
-    # print(payp.yahooDataV7())
+    payp = OHLC_YahooFinance("PAY.L", "2023-01-01")
+    print(payp.yahooDataV8())

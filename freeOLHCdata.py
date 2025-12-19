@@ -15,7 +15,8 @@ class OHLCData:
                     supported interval ["1m", "2m", "5m", "15m", "30m", "1h", "1d","5d", "1wk", "1mo"]
     yahooV7:        MSCI = OHLCData("MSCI", "2022-08-08", "2022-08-12").yahooDataV7() # interval hardcode to 1d
 
-    alpha_vantage:  MSCI = OHLCData("MSCI", "2022-08-08").alpha_vantage_request() 
+    alpha_vantage:  Obselete, no longer free
+                    MSCI = OHLCData("MSCI", "2022-08-08").alpha_vantage_request() 
                     only symbol required, set a dummy start date
                     US symbol only? to check!
                     will load all ohlc data for the symbol, TODO: more work needed
@@ -38,7 +39,8 @@ class OHLCData:
                     US market symbol only for free tier
                     allow multiple symbols
 
-    iex:            MSCI = OHLCData("MSCI", "2022-07-18", interval="3days").iex_request()
+    iex:            IEX stops responding to api requests
+                    MSCI = OHLCData("MSCI", "2022-07-18", interval="3days").iex_request()
                     up to 15 yrs historical data, mostly only 5 to 10 yrs
                     special interval for 10min in last 5 work days and 30min in last month eg if today 2022-08-14
                     MSCI = OHLCData("MSCI", "2022-08-08", interval="10m").iex_request()
@@ -397,12 +399,12 @@ class OHLCData:
 
 
 def main():
-    MSCI = OHLCData(["MSCI","FDS","AAPL"], "2022-09-28", interval="1day").twelveData()
+    MSCI = OHLCData("MSCI", "2025-07-18", interval="3days").iex_request()
     print(MSCI)
     # MORN = OHLCData("MORN", "2022-09-03", interval="1week").eodhd()
     # print(MORN)
-#     FDS = OHLCData("SDR.L", "2022-09-29", interval="1h").yahooDataV8()
-#     print(FDS)
+    FDS = OHLCData("SDR.L", "2022-09-29", interval="1h").yahooDataV8()
+    print(FDS)
 #     FDS = OHLCData("PAY.L", "2022-09-08").yahooDataV7()
 #     print(FDS)
 

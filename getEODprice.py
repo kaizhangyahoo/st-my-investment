@@ -5,7 +5,6 @@ import ast
 import requests
 import numpy as np
 from datetime import datetime
-# import pandas_datareader.data as web
 from market_data_api import OHLC_YahooFinance
 
 def chunks(l, n):
@@ -58,13 +57,12 @@ def getEODpriceUK(L) -> dict:
         # close_price = web.DataReader(i, 'yahoo', last_business_day)['Adj Close'][-1]
         print(str(last_business_day))
         close_price = OHLC_YahooFinance(i, str(last_business_day))
-        # print(close_price.yahooDataV7())
-        uk_close_price[i] = close_price.yahooDataV8()['close'][-1]/100
+        uk_close_price[i] = close_price.yahooDataV8()['close'].iloc[-1]/100
     return uk_close_price
 
 
 def main():
-    L1 = ['PAY.L', 'SDR.L']
+    L1 = ['PAY.L', 'SDR.L', 'AFX.DE']
     print(getEODpriceUK(L1))
     print(getEODpriceUSA(["MSCI", "FDS"]))
 
