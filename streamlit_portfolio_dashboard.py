@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import ticker_resolution as tr
 import getEODprice as g12
-import macro_widgets as mw
+# import macro_widgets as mw
 import plot_portfolio_weights as ppw
 import datetime as dt
 from market_data_api import Finage
@@ -14,7 +14,9 @@ def replace_duplicated_ticker(df_in: pd.DataFrame) -> pd.DataFrame:
     The dataframe then would be ready for the position calculation"""
     # st.write(os.path.dirname(os.path.realpath(__file__)) + '/company_name_to_ticker.json')
     df = tr.add_ticker(df_in).sort_values('Settlement date', ascending=False)
-    df_find_dup_ticker = df[['Ticker','Market', 'Settlement date']].drop_duplicates(subset=['Ticker','Market'], keep='first') # TODO: potential bug for RTX etc
+    df_find_dup_ticker = df[['Ticker','Market', 'Settlement date']].drop_duplicates(
+        subset=['Ticker','Market'], keep='first'  # type: ignore[call-arg]
+    ) # TODO: potential bug for RTX etc
     df_find_dup_ticker = df_find_dup_ticker[df_find_dup_ticker.duplicated(subset=['Ticker'], keep=False)].sort_values('Settlement date', ascending=False)
     df_find_dup_ticker = df_find_dup_ticker.reset_index(drop=True)
     for i in df_find_dup_ticker['Market'][1:len(df_find_dup_ticker)]:
@@ -43,7 +45,7 @@ def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:  #TODO: rewrite a n
     all_symbols_close_price = {**g12.getEODpriceUSA(us_symbols_with_position), **g12.getEODpriceUK(uk_symbols_with_position)}
     df_op['Last Close'] = df_op.index.get_level_values("Ticker").map(all_symbols_close_price).astype(float)
     df_op['current position'] = df_op['Quantity'] * df_op['Last Close']
-    return df_op[['Quantity', 'Consideration', 'current position','Cost/Proceeds', 'Commission','Charges']]
+    return df_op[['Quantity', 'Consideration', 'current position','Cost/Proceeds', 'Commission','Charges']] # type: ignore
 
 
 def format_df_for_display(df_in: pd.DataFrame) -> pd.DataFrame:
@@ -92,7 +94,7 @@ def apply_stripe_style_to_df(df):
     styles = []
     for index in df.index:
         if index % 2 == 0:
-            styles.append("background-color: #f2f2f2")
+            styles.append("background-color: #121212")
         else:
             styles.append("")
     return styles
@@ -166,83 +168,83 @@ def threeTabs():
 
     with tab2:
         st.header("Macro ecconomic environment")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("VIX")
-            fig, current_vix = mw.get_vix_from_yahoo("2019-12-01")
-            st.plotly_chart(fig, use_container_width=True)
-            st.write(current_vix)
-        with col2:
-            st.subheader("Real GDP Percentage Change")
-            fig, last4qtr = mw.real_gdp_pct_change("2012-01-01")
-            st.plotly_chart(fig, use_container_width=True)
-            st.write(last4qtr)
-        st. write('***')
+    #     col1, col2 = st.columns(2)
+    #     with col1:
+    #         st.subheader("VIX")
+    #         fig, current_vix = mw.get_vix_from_yahoo("2019-12-01")
+    #         st.plotly_chart(fig, use_container_width=True)
+    #         st.write(current_vix)
+    #     with col2:
+    #         st.subheader("Real GDP Percentage Change")
+    #         fig, last4qtr = mw.real_gdp_pct_change("2012-01-01")
+    #         st.plotly_chart(fig, use_container_width=True)
+    #         st.write(last4qtr)
+    #     st. write('***')
 
-        row1_col1, row1_col2, = st.columns(2)
-        with row1_col1:
-            st.subheader("PCE")
-            fig, last3monthpce = mw.pce_from_fred("2019-01-01")
-            st.plotly_chart(fig, use_container_width=True)
-            st.write(last3monthpce)
-        with row1_col2:
-            st.subheader("CPI")
-            fig, last3monthcpi = mw.cpi_from_fred("2019-01-01")
-            st.plotly_chart(fig, use_container_width=True)
-            st.write(last3monthcpi)
-        st. write('***')
+    #     row1_col1, row1_col2, = st.columns(2)
+    #     with row1_col1:
+    #         st.subheader("PCE")
+    #         fig, last3monthpce = mw.pce_from_fred("2019-01-01")
+    #         st.plotly_chart(fig, use_container_width=True)
+    #         st.write(last3monthpce)
+    #     with row1_col2:
+    #         st.subheader("CPI")
+    #         fig, last3monthcpi = mw.cpi_from_fred("2019-01-01")
+    #         st.plotly_chart(fig, use_container_width=True)
+    #         st.write(last3monthcpi)
+    #     st. write('***')
 
-        st.subheader("CPI & PCE % Change")
-        fig, last3month_cpi_pce = mw.cpi_pce_pct_change_from_fred("2020-01-01")
-        st.plotly_chart(fig, use_container_width=True)
-        st.write(last3month_cpi_pce)
+    #     st.subheader("CPI & PCE % Change")
+    #     fig, last3month_cpi_pce = mw.cpi_pce_pct_change_from_fred("2020-01-01")
+    #     st.plotly_chart(fig, use_container_width=True)
+    #     st.write(last3month_cpi_pce)
             
-        st.subheader("Unemployment Rate and Consumer Confidence")
-        row2_col1, row2_col2, = st.columns(2, gap="medium")
-        with row2_col1:
-            fig, last3month_unemployment = mw.unemployment_rate_from_fred("2020-01-01")
-            st.plotly_chart(fig)
-            st.write(last3month_unemployment)
+    #     st.subheader("Unemployment Rate and Consumer Confidence")
+    #     row2_col1, row2_col2, = st.columns(2, gap="medium")
+    #     with row2_col1:
+    #         fig, last3month_unemployment = mw.unemployment_rate_from_fred("2020-01-01")
+    #         st.plotly_chart(fig)
+    #         st.write(last3month_unemployment)
             
-        with row2_col2:
-            fig, last3month_consumer_confidence = mw.consumer_confidence_from_fred("2020-01-01")
-            st.plotly_chart(fig, use_container_width=True)
-            st.write(last3month_consumer_confidence)
-        st. write('***')
+    #     with row2_col2:
+    #         fig, last3month_consumer_confidence = mw.consumer_confidence_from_fred("2020-01-01")
+    #         st.plotly_chart(fig, use_container_width=True)
+    #         st.write(last3month_consumer_confidence)
+    #     st. write('***')
 
-        # st.subheader("[Buffett Indicator](https://www.investopedia.com/terms/m/marketcapgdp.asp)")
-        # st.plotly_chart(mw.buffet_indicator_calc_from_fred("1980-01-01"))        
-        # st. write('***')
+    #     # st.subheader("[Buffett Indicator](https://www.investopedia.com/terms/m/marketcapgdp.asp)")
+    #     # st.plotly_chart(mw.buffet_indicator_calc_from_fred("1980-01-01"))        
+    #     # st. write('***')
         
-        # # TODO: st.subheader("ISM Manufacturing")
+    #     # # TODO: st.subheader("ISM Manufacturing")
 
-        inputed_api = st.text_input("Enter API key to access changes in sectors", value="finage api key", max_chars=100, help="register at https://moon.finage.co.uk/register")
-        if (inputed_api != "finage api key") and (inputed_api != ""):
-            st.subheader("sector ETFs")
-            change_length = st.selectbox("change period", 
-                                        ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
-                                        "Six Monthly Percentage Change", "Yearly Percentage Change"],
-                                        help="select the period to show the change", index=4, key="sector_etf_change_length")
-            df = sector_etf_price_and_changes(inputed_api)
-            print(df)
-            st.plotly_chart(mw.sector_etf_map(df[['Sector', 'ETF', 'Last Price', change_length]]))
+    #     inputed_api = st.text_input("Enter API key to access changes in sectors", value="finage api key", max_chars=100, help="register at https://moon.finage.co.uk/register")
+    #     if (inputed_api != "finage api key") and (inputed_api != ""):
+    #         st.subheader("sector ETFs")
+    #         change_length = st.selectbox("change period", 
+    #                                     ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
+    #                                     "Six Monthly Percentage Change", "Yearly Percentage Change"],
+    #                                     help="select the period to show the change", index=4, key="sector_etf_change_length")
+    #         df = sector_etf_price_and_changes(inputed_api)
+    #         print(df)
+    #         st.plotly_chart(mw.sector_etf_map(df[['Sector', 'ETF', 'Last Price', change_length]]))
 
-            if st.checkbox("show s&p500 winner loser", help="finage allowance might reach", key="sp500_win_lose"):
-                change_length = st.selectbox("change period", 
-                                ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
-                                "Six Monthly Percentage Change", "Yearly Percentage Change"],
-                                help="select the period to show the change", index=4, key="sp500_win_lose_change_length")
-                df = get_sp500_changes(inputed_api)
-                df = df.astype({"Last Price": float, change_length: float})
-                df.to_csv("sp500_changes.csv")
-                df = df[df[change_length]>0]
-                st.subheader("S&P500 Winners")
-                st.plotly_chart(mw.sp500_win_lose_tree(df[["Symbol","Last Price","Security","GICS Sector","GICS Sub-Industry", change_length]]))
-                df = get_sp500_changes(inputed_api)
-                df = df[df[change_length]<0]
-                df[change_length] = df[change_length] * -1
-                st.subheader("S&P500 Losers")
-                st.plotly_chart(mw.sp500_win_lose_tree(df[["Symbol","Last Price","Security","GICS Sector","GICS Sub-Industry", change_length]]))
+    #         if st.checkbox("show s&p500 winner loser", help="finage allowance might reach", key="sp500_win_lose"):
+    #             change_length = st.selectbox("change period", 
+    #                             ["Daily Percentage Change", "Weekly Percentage Change", "Monthly Percentage Change", 
+    #                             "Six Monthly Percentage Change", "Yearly Percentage Change"],
+    #                             help="select the period to show the change", index=4, key="sp500_win_lose_change_length")
+    #             df = get_sp500_changes(inputed_api)
+    #             df = df.astype({"Last Price": float, change_length: float})
+    #             df.to_csv("sp500_changes.csv")
+    #             df = df[df[change_length]>0]
+    #             st.subheader("S&P500 Winners")
+    #             st.plotly_chart(mw.sp500_win_lose_tree(df[["Symbol","Last Price","Security","GICS Sector","GICS Sub-Industry", change_length]]))
+    #             df = get_sp500_changes(inputed_api)
+    #             df = df[df[change_length]<0]
+    #             df[change_length] = df[change_length] * -1
+    #             st.subheader("S&P500 Losers")
+    #             st.plotly_chart(mw.sp500_win_lose_tree(df[["Symbol","Last Price","Security","GICS Sector","GICS Sub-Industry", change_length]]))
 
 
 
@@ -258,7 +260,7 @@ def threeTabs():
             last_business_day = dt.datetime.today() - pd.offsets.BDay(5)
 
         t_curve_date = st.date_input("Select date", last_business_day, help="present or future date show max history, data from NASDAQ data link").strftime("%Y-%m-%d")
-        st.plotly_chart(mw.treasury_curve(t_curve_date), use_container_width=True)
+        # st.plotly_chart(mw.treasury_curve(t_curve_date), use_container_width=True)
 
         st.subheader("Gold and Silver")
         show_recession_highlights = st.checkbox("show recession dates")

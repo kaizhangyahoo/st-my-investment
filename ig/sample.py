@@ -31,7 +31,6 @@ def main():
     
     try:
         # 1. Login
-        print("\nLogging in...")
         session = client.login()
         print(f"Logged in! Client ID: {session.client_id}")
         

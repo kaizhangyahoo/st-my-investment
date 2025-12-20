@@ -54,8 +54,20 @@ class IGStreamingClient:
     def _on_open(self, ws):
         logger.info("Streaming connection opened")
         # Need to send connection creation request for Lightstreamer
-        # create_session.txt format
-        password = f"CST-{self.session.cst_token}|XST-{self.session.x_security_token}"
+        
+        # Prepare password:
+        # Standard: CST-{cst}|XST-{xst}
+        # OAuth: Bearer {access_token} (Theoretical - IG specific LS auth varies)
+        
+        password = ""
+        if self.session.cst_token and self.session.x_security_token:
+            password = f"CST-{self.session.cst_token}|XST-{self.session.x_security_token}"
+        elif self.session.oauth_token:
+            # Fallback or specific OAuth handling for LS
+            # Note: IG Lightstreamer with OAuth often requires a different flow or mapping.
+            # Using raw access token as a guess for the password field if simple pattern allows.
+            password = f"Bearer {self.session.oauth_token.get('access_token')}"
+        
         user = self.session.active_account_id
         
         # Proper LS protocol handshake is non-trivial (bind_session etc). 

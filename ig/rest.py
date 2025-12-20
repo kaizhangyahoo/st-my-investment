@@ -34,36 +34,44 @@ class IGRestClient:
             "Version": "3"
         })
         # headers = {"Version": "3"} 
-        print(f"headers for login: {json.dumps(self._http.headers, indent=2)}")
         response = self._http.post(url, json=payload, headers=self._http.headers)
-        
         if response.status_code != 200:
             raise Exception(f"Login failed: {response.status_code} {response.text}")
-            
         data = response.json()
         
-        # Extract headers typically needed for subsequent requests
+        # Extract headers (Legacy/V2)
         cst = response.headers.get("CST")
         x_security_token = response.headers.get("X-SECURITY-TOKEN")
         
-        if not cst or not x_security_token:
-             # Sometimes they might be in the body in different versions, but typically headers for V2
-             raise Exception("Authentication tokens (CST/X-SECURITY-TOKEN) missing from response headers")
+        # Extract OAuth (V3)
+        oauth_token = data.get("oauthToken")
+
+        if not (cst and x_security_token) and not oauth_token:
+             raise Exception("Authentication tokens (CST/XST or OAuth) missing from response")
 
         self.session = UserSession(
             client_id=data.get("clientId"),
             account_id=data.get("accountId"),
+            # account_id="QX2B3",
             lightstreamer_endpoint=data.get("lightstreamerEndpoint"),
             cst_token=cst,
             x_security_token=x_security_token,
-            active_account_id=data.get("currentAccountId")
+            active_account_id=data.get("currentAccountId") or data.get("accountId"), # Fallback if currentAccountId missing
+            oauth_token=oauth_token
         )
         
         # Update session headers for future requests
-        self._http.headers.update({
-            "CST": self.session.cst_token,
-            "X-SECURITY-TOKEN": self.session.x_security_token
-        })
+        if self.session.oauth_token:
+            access_token = self.session.oauth_token.get("access_token")
+            self._http.headers.update({
+                "Authorization": f"Bearer {access_token}",
+                "IG-ACCOUNT-ID": self.session.account_id
+            })
+        
+        if self.session.cst_token:
+            self._http.headers.update({"CST": self.session.cst_token})
+        if self.session.x_security_token:
+            self._http.headers.update({"X-SECURITY-TOKEN": self.session.x_security_token})
         
         logger.info(f"Logged in as {self.config.username}, Account: {self.session.account_id}")
         return self.session

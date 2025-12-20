@@ -13,9 +13,10 @@ class UserSession:
     client_id: str
     account_id: str
     lightstreamer_endpoint: str
-    cst_token: str
-    x_security_token: str
     active_account_id: str
+    cst_token: Optional[str] = None
+    x_security_token: Optional[str] = None
+    oauth_token: Optional[Dict[str, Any]] = None
 
 @dataclass
 class MarketData:
