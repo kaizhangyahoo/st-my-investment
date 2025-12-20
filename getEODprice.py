@@ -29,6 +29,13 @@ def less_than_32_symbols(symbols_in_8s, k) -> dict:
                     close_price[ticker] = r["close"]
                 except:
                     print("Keyerror", response.text)
+            try:
+                close_price[ticker] = r[ticker]["close"]
+            except KeyError:
+                try:
+                    close_price[ticker] = r["close"]
+                except:
+                    print("Keyerror", response.text)
     return close_price
 
 
@@ -48,6 +55,7 @@ def getEODpriceUSA(L) -> dict:
 
 def getEODpriceUK(L) -> dict:
     if datetime.now().hour < 22.5:
+    if datetime.now().hour < 22.5:
         last_business_day = np.busday_offset('today', -1, roll='backward')
     else:
         last_business_day = np.busday_offset('today', 0, roll='backward')
@@ -64,6 +72,7 @@ def getEODpriceUK(L) -> dict:
 def main():
     L1 = ['PAY.L', 'SDR.L', 'AFX.DE']
     print(getEODpriceUK(L1))
+    print(getEODpriceUSA(["MSCI", "FDS"]))
     print(getEODpriceUSA(["MSCI", "FDS"]))
 
 

@@ -36,11 +36,18 @@ def color_green_red(val):
 
 @st.cache_data
 def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:  #TODO: rewrite a new open position table
+def color_green_red(val):
+    color = 'green' if val > 0 else 'red'
+    return f'background-color: {color}'
+
+@st.cache_data
+def openPositionsCosts(df_in: pd.DataFrame) -> pd.DataFrame:  #TODO: rewrite a new open position table
     """Calculate open position and costs for each ticker"""
-    df = replace_duplicated_ticker(df_in).drop(columns=['Settlement date'])
+    df = replace_duplicated_ticker(df_in).drop(columns=['Settlement date']).drop(columns=['Settlement date'])
     df_op = df.groupby(['Market','Ticker']).sum()
     symbols_with_position = df_op[df_op['Quantity'] > 0].index.get_level_values('Ticker').tolist()
     us_symbols_with_position = [x for x in symbols_with_position if x.count('.') == 0]
+    uk_symbols_with_position = [x for x in symbols_with_position if x[-2:] == '.L'] # TODO: add more market in other region in future
     uk_symbols_with_position = [x for x in symbols_with_position if x[-2:] == '.L'] # TODO: add more market in other region in future
     all_symbols_close_price = {**g12.getEODpriceUSA(us_symbols_with_position), **g12.getEODpriceUK(uk_symbols_with_position)}
     df_op['Last Close'] = df_op.index.get_level_values("Ticker").map(all_symbols_close_price).astype(float)
@@ -103,7 +110,7 @@ def threeTabs():
     st.title("My Portfolio")
 
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Positions", "Macro", "FICC", "Fire"])
+    tab1, tab2, tab3, tab4, tab4 = st.tabs(["Positions", "Macro", "FICC", "FICC", "Fire"])
 
     with tab1:
         st.header("Upload Trade/Transaction History")
@@ -123,6 +130,7 @@ def threeTabs():
                     with st.spinner("Loading tickers into dataframe, take up to 30 seconds..."):
                         df_op = openPositionsCosts(df_trade_history)
                         st.dataframe(format_df_for_display(df_op).style.applymap(color_green_red, subset=['PandL']))
+                        st.dataframe(format_df_for_display(df_op).style.applymap(color_green_red, subset=['PandL']))
 
                     market_list = df_trade_history['Market'].unique()
                     market = st.selectbox("Select Stock", market_list)
@@ -130,7 +138,17 @@ def threeTabs():
                     df_filtered_market = df_trade_history[df_trade_history['Market'] == market].reset_index(drop=True)
                     df_styled = df_filtered_market.style.apply(apply_stripe_style_to_df, axis=0)
                     st.dataframe(df_styled)
+                    df_filtered_market = df_trade_history[df_trade_history['Market'] == market].reset_index(drop=True)
+                    df_styled = df_filtered_market.style.apply(apply_stripe_style_to_df, axis=0)
+                    st.dataframe(df_styled)
 
+                    df_op_has_position = df_op[df_op['Quantity'] > 0]
+                    if market in df_op_has_position.index.get_level_values('Market'):
+                        company_list = df_op_has_position.index.get_level_values('Market').tolist()
+                        standout = [0]*len(company_list)
+                        standout[company_list.index(market)] = 0.5
+                        fig = ppw.plot_portfolio_weights(df_op_has_position, company_list, standout)
+                        st.plotly_chart(fig, use_container_width=True)
                     df_op_has_position = df_op[df_op['Quantity'] > 0]
                     if market in df_op_has_position.index.get_level_values('Market'):
                         company_list = df_op_has_position.index.get_level_values('Market').tolist()
@@ -147,12 +165,18 @@ def threeTabs():
 
                     df_transactions['PL Amount'] = df_transactions['PL Amount'].str.replace(',','')
                     type_dict = {'TextDate': 'datetime64[s]', 'PL Amount': 'float', 'Summary': 'category', 'Transaction type': 'category', 'Cash transaction': 'boolean', 'MarketName': 'string'}
+                    type_dict = {'TextDate': 'datetime64[s]', 'PL Amount': 'float', 'Summary': 'category', 'Transaction type': 'category', 'Cash transaction': 'boolean', 'MarketName': 'string'}
                     df_transactions = df_transactions.astype(type_dict)
+                    df_transactions['Date'] = df_transactions['TextDate']
                     df_transactions['Date'] = df_transactions['TextDate']
                     df_transactions['Date'] = pd.to_datetime(df_transactions['Date'], format='%Y-%m-%d')
                     # df_transactions.set_index('Date', inplace=True)
+                    # df_transactions.set_index('Date', inplace=True)
                     df_cashIn = df_transactions[(df_transactions['Summary']=='Cash In') | (df_transactions['MarketName'] == 'Bank Deposit')]
                     df_cashIn.rename(columns={'ProfitAndLoss': 'Deposits'}, inplace=True)
+                    df_cashIn['Date'] = df_cashIn['Date'].dt.strftime('%Y-%m-%d')
+                    df_cashIn.set_index('Date', inplace=True)
+                    print(df_cashIn['Deposits'])
                     df_cashIn['Date'] = df_cashIn['Date'].dt.strftime('%Y-%m-%d')
                     df_cashIn.set_index('Date', inplace=True)
                     print(df_cashIn['Deposits'])
