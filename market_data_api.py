@@ -141,5 +141,5 @@ if __name__ == "__main__":
     # print(finage.sp500_change_by_sector())
     # if finage.err_results:
     #     print("Error: ", finage.err_results)
-    payp = OHLC_YahooFinance("PAY.L", "2023-01-01")
+    payp = OHLC_YahooFinance("AFX.DE", "2025-12-24")
     print(payp.yahooDataV8())

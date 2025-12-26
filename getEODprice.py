@@ -63,16 +63,25 @@ def getEODpriceUK(L) -> dict:
     for i in L:
         # close_price = web.DataReader(i, 'yahoo', last_business_day)['Adj Close'][-1]
         print(str(last_business_day))
-        close_price = OHLC_YahooFinance(i, str(last_business_day))
-        uk_close_price[i] = close_price.yahooDataV8()['close'].iloc[-1]/100
+        try:
+            # Create object AND fetch data inside the try block, otherwise try block won't work
+            close_price_object = OHLC_YahooFinance(i, str(last_business_day))
+            close_price = close_price_object.yahooDataV8()
+        except KeyError as e:
+            if 'timestamp' in str(e):
+                last_business_day = np.busday_offset(last_business_day, -1, roll='backward')
+                close_price_object = OHLC_YahooFinance(i, str(last_business_day))
+                close_price = close_price_object.yahooDataV8()
+
+        uk_close_price[i] = close_price['close'].iloc[-1]/100
+
     return uk_close_price
 
 
 def main():
     L1 = ['PAY.L', 'SDR.L', 'AFX.DE']
     print(getEODpriceUK(L1))
-    print(getEODpriceUSA(["MSCI", "FDS"]))
-    print(getEODpriceUSA(["MSCI", "FDS"]))
+    # print(getEODpriceUSA(["MSCI", "FDS"]))
 
 
 if __name__ == "__main__":

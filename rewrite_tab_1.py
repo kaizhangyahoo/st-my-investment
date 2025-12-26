@@ -137,8 +137,12 @@ if uploaded_file is not None:
             if len(df_trade_history_not_null) != len(df_trade_history):
                 st.warning(f"⚠️ {len(df_trade_history) - len(df_trade_history_not_null)} rows with unresolved Ticker were excluded from analysis.Result might not be accurate.")
             
+            # update ticker
+            df_trade_history_ticker_updated = df_trade_history_not_null.copy()
+            df_trade_history_ticker_updated['Ticker'] = df_trade_history_ticker_updated['Ticker'].replace(company_name_to_ticker)
+
             # calculate current positions
-            df_current_positions = df_trade_history_not_null.groupby('Ticker').agg({'Quantity':'sum', 'Market': 'last', 'Cost/Proceeds': 'sum', 'Charges': 'sum', 'Commission': 'sum', 'Currency': 'last'})
+            df_current_positions = df_trade_history_ticker_updated.groupby('Ticker').agg({'Quantity':'sum', 'Market': 'last', 'Cost/Proceeds': 'sum', 'Charges': 'sum', 'Commission': 'sum', 'Currency': 'last'})
             df_current_positions = df_current_positions[df_current_positions['Quantity'] != 0]
             df_current_positions['Costs'] = df_current_positions['Cost/Proceeds'] + df_current_positions['Charges'] + df_current_positions['Commission']
             current_prices = get_current_price(df_current_positions.index.tolist())
@@ -167,8 +171,8 @@ if uploaded_file is not None:
 
             
             # single ticker trade history section TODO: buggy, eg B, snps, ansys, etc
-            trade_history_search_options1 = df_trade_history_not_null['Market'].unique()
-            trade_history_search_options2 = df_trade_history_not_null['Ticker'].unique()
+            trade_history_search_options1 = df_trade_history_ticker_updated['Market'].unique()
+            trade_history_search_options2 = df_trade_history_ticker_updated['Ticker'].unique()
             trade_history_search_options = trade_history_search_options1.tolist() + trade_history_search_options2.tolist() 
             selected_company = st.selectbox(
                 label="Select an instrument to see trade history",
@@ -182,9 +186,9 @@ if uploaded_file is not None:
                 selected_ticker = company_name_to_ticker[selected_company]
     
             if selected_company:
-                df_ticker_trade_history = df_trade_history_not_null[
-                    (df_trade_history_not_null['Ticker'] == selected_ticker) & 
-                    (df_trade_history_not_null['Activity'] == "TRADE")
+                df_ticker_trade_history = df_trade_history_ticker_updated[
+                    (df_trade_history_ticker_updated['Ticker'] == selected_ticker) & 
+                    (df_trade_history_ticker_updated['Activity'] == "TRADE")
                 ].sort_values(by='Date', ascending=False)
         
                 st.subheader(f"Trade History for {selected_company} ({selected_ticker})")
