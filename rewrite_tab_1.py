@@ -170,7 +170,7 @@ if uploaded_file is not None:
             }).map(color_green_red, subset=['PandL GBP']), height=800)
 
             
-            # single ticker trade history section TODO: buggy, eg B, snps, ansys, etc
+            # single ticker trade history section
             trade_history_search_options1 = df_trade_history_ticker_updated['Market'].unique()
             trade_history_search_options2 = df_trade_history_ticker_updated['Ticker'].unique()
             trade_history_search_options = trade_history_search_options1.tolist() + trade_history_search_options2.tolist() 
@@ -184,6 +184,10 @@ if uploaded_file is not None:
                 selected_ticker = selected_company
             else:
                 selected_ticker = company_name_to_ticker[selected_company]
+                # check if the ticker itself is a key in the map (chained mapping)
+                if selected_ticker in company_name_to_ticker:
+                     selected_ticker = company_name_to_ticker[selected_ticker]
+                print(selected_ticker)
     
             if selected_company:
                 df_ticker_trade_history = df_trade_history_ticker_updated[
