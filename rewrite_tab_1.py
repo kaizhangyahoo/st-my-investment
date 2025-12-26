@@ -39,42 +39,6 @@ def color_green_red(val):
 #             matches.append(f"{company_name} ({ticker})")
 #     return matches
 
-# @st.fragment
-def single_ticker_trade_history_section(df_trade_history_not_null, company_name_to_ticker):
-    """Only this section reruns when selectbox changes"""
-    if "selected_company" not in st.session_state:
-        st.session_state.selected_company = None
-    
-    trade_history_search_options1 = df_trade_history_not_null['Market'].unique()
-    trade_history_search_options2 = df_trade_history_not_null['Ticker'].unique()
-    trade_history_search_options = trade_history_search_options1.tolist() + trade_history_search_options2.tolist() 
-    selected_company = st.selectbox(
-        label="Select an instrument to see trade history",
-        options=trade_history_search_options,
-        key="select_company_ticker"
-    )
-    
-    if selected_company != st.session_state.selected_company:
-        st.session_state.selected_company = selected_company
-    
-    if st.session_state.selected_company:
-        if st.session_state.selected_company in company_name_to_ticker.values():
-            selected_ticker = st.session_state.selected_company
-        else:
-            selected_ticker = company_name_to_ticker[st.session_state.selected_company]
-        df_ticker_trade_history = df_trade_history_not_null[
-            (df_trade_history_not_null['Ticker'] == selected_ticker) & 
-            (df_trade_history_not_null['Activity'] == "TRADE")
-        ].sort_values(by='Date', ascending=False)
-        
-        st.subheader(f"Trade History for {st.session_state.selected_company} ({selected_ticker})")
-        st.table(df_ticker_trade_history[['Market', 'Ticker', 'Date', 'Direction', 'Quantity','Price', 'Currency']])
-
-    return selected_company
-
-
-
-
 st.title("Portfolio Management Dashboard and Analytics")
 
 st.header("Upload Trade/Transaction History")
@@ -203,14 +167,36 @@ if uploaded_file is not None:
 
             
             # single ticker trade history section TODO: buggy, eg B, snps, ansys, etc
-            selected_instrument = single_ticker_trade_history_section(df_trade_history_not_null, company_name_to_ticker)
+            trade_history_search_options1 = df_trade_history_not_null['Market'].unique()
+            trade_history_search_options2 = df_trade_history_not_null['Ticker'].unique()
+            trade_history_search_options = trade_history_search_options1.tolist() + trade_history_search_options2.tolist() 
+            selected_company = st.selectbox(
+                label="Select an instrument to see trade history",
+                options=trade_history_search_options,
+                key="select_company_ticker"
+            )
+
+            if selected_company in company_name_to_ticker.values():
+                selected_ticker = selected_company
+            else:
+                selected_ticker = company_name_to_ticker[selected_company]
+    
+            if selected_company:
+                df_ticker_trade_history = df_trade_history_not_null[
+                    (df_trade_history_not_null['Ticker'] == selected_ticker) & 
+                    (df_trade_history_not_null['Activity'] == "TRADE")
+                ].sort_values(by='Date', ascending=False)
+        
+                st.subheader(f"Trade History for {selected_company} ({selected_ticker})")
+                st.table(df_ticker_trade_history[['Market', 'Ticker', 'Date', 'Direction', 'Quantity','Price', 'Currency']])
+
 
 
             # plot portfolio weights TODO: buggy, eg use any symbol highlight won't work
             standout = [0.0] * len(df_current_positions)  # selected instrument highlight
             instruments_list = df_current_positions['Market'].tolist()
-            if selected_instrument in instruments_list:
-                idx = instruments_list.index(selected_instrument)
+            if selected_company in instruments_list:
+                idx = instruments_list.index(selected_company)
                 standout[idx] = 0.5
             fig = ppw.plot_portfolio_weights(df_current_positions, standout, GBP)
             st.plotly_chart(fig, use_container_width=True)
