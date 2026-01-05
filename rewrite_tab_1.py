@@ -2,11 +2,13 @@ import pandas as pd
 import streamlit as st
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from rewrite_ticker_resolution import use_sec_site
 from getEODprice import getEODpriceUK, getEODpriceUSA
 from plotly import express as px
 import rewrite_plot_portfolio_weights as ppw
+from market_data_api import OHLC_YahooFinance
+
 
 @st.cache_data
 def get_current_price(tickers: list) -> dict:
@@ -20,24 +22,123 @@ def convert_to_gbp(row):
     if row.name.endswith('.L'):
         return row['Market Value']  # already in GBP
     elif row.name.endswith('.DE'):
-        eur_to_gbp = GBP['GBPEUR=X']
-        return row['Market Value'] / eur_to_gbp / 100 # convert EUR to GBP
+        eur_to_gbp = GBPEUR.iloc[-1]
+        return row['Market Value'] / eur_to_gbp  # convert EUR to GBP
     else:
-        usd_to_gbp = GBP['GBPUSD=X']
-        return row['Market Value'] / usd_to_gbp / 100 # convert USD to GBP
+        usd_to_gbp = GBPUSD.iloc[-1]
+        return row['Market Value'] / usd_to_gbp  # convert USD to GBP
 
 def color_green_red(val):
     color = 'green' if val > 0 else 'red'
     return f'background-color: {color}'
 
-# @st.cache_data
-# def search_companies(searchterm: str) -> list:
-#     """Search company names and tickers by searchterm"""
-#     matches = []
-#     for company_name, ticker in company_name_to_ticker.items():
-#         if searchterm.lower() in company_name.lower() or searchterm.lower() in ticker.lower():
-#             matches.append(f"{company_name} ({ticker})")
-#     return matches
+def calculate_past_date(period: str) -> datetime:
+    today = datetime.today()
+    if period == '1y':
+        past_date = today - timedelta(days=365)
+    elif period == '6m':
+        past_date = today - timedelta(days=182)
+    elif period == '3m':
+        past_date = today - timedelta(days=91)
+    elif period == '1m':
+        past_date = today - timedelta(days=30)
+    elif period == '1w':
+        past_date = today - timedelta(days=7)
+    elif period == '1d':
+        past_date = today - timedelta(days=1)
+    else:
+        raise ValueError("Invalid period. Use '1y', '6m', '3m', '1m', '1w', or '1d'.")
+    
+    # Adjust to business day (if Saturday or Sunday, move to preceding Friday)
+    if past_date.weekday() == 5: # Saturday
+        past_date -= timedelta(days=1)
+    elif past_date.weekday() == 6: # Sunday
+        past_date -= timedelta(days=2)
+        
+    return past_date
+
+@st.cache_data
+def get_historical_fx(start_date: str):
+    fx_data ={}
+    for pair in ['GBPUSD=X', 'GBPEUR=X']:
+        try:
+            data = OHLC_YahooFinance(pair, start_date).yahooDataV8()
+            fx_data[pair] = data['close']
+        except Exception as e:
+            print(f"Error retrieving data for {pair}: {e}")
+    return fx_data
+
+
+# copilot generated code for ticker holding period
+def symbol_trading_summary(df_trade_history):
+    df = df_trade_history.copy()
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce', dayfirst=True)
+    df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce').fillna(0)
+
+    g = df.groupby('Ticker')
+    first_date = g['Date'].min()
+    last_appearance = g['Date'].max()
+    current_qty = g['Quantity'].sum()
+
+    out = pd.DataFrame({
+        'Ticker': first_date.index,
+        'FirstBuyDate': pd.to_datetime(first_date).dt.date,
+        'CurrentQuantity': current_qty.values,
+        'LastDate': pd.to_datetime(last_appearance).dt.date
+    }).reset_index(drop=True)
+
+    # If still held (non-zero quantity) set LastDate to None
+    out.loc[out['CurrentQuantity'] != 0, 'LastDate'] = None
+
+    return out
+
+def synthetic_historical_data_generator(df_each_ticker: pd.DataFrame, ticker: str) -> pd.DataFrame:
+    df_each_ticker = df_each_ticker.sort_values(by='Date', ascending=True).reset_index(drop=True)
+    rows = []
+    for i in range(len(df_each_ticker)-1):
+        start = df_each_ticker.at[i, 'Date']
+        end = df_each_ticker.at[i+1, 'Date']
+        start_price = df_each_ticker.at[i, 'Price']
+        end_price = df_each_ticker.at[i+1, 'Price']
+        biz = pd.bdate_range(start=start, end=end)
+        prices = np.linspace(start_price, end_price, num=len(biz))
+
+        for j, d in enumerate(biz):
+            rows.append({
+                "high": np.nan,
+                "volume": 0,
+                "open": np.nan,
+                "close": prices[j]/100,
+                "low": np.nan,
+                "Date": d.date(),        # date only, no time
+                "ticker": ticker
+            })
+
+    df_synthetic = pd.DataFrame(rows)
+    df_synthetic = df_synthetic.drop_duplicates(subset=['Date'], keep='first').reset_index(drop=True)
+    return df_synthetic
+
+def historical_market_data_yahoo(market_data_collections: pd.DataFrame, df_trade_history: pd.DataFrame) -> pd.DataFrame:
+    df_market_historical_data = pd.DataFrame()
+    for idx, row in market_data_collections.iterrows():
+        print(f"Fetching data for {row['Ticker']} from {row['FirstBuyDate']}")
+        try: 
+            if row['LastDate'] is None:
+                market_historical_data = OHLC_YahooFinance(row['Ticker'], row['FirstBuyDate'].strftime('%Y-%m-%d')).yahooDataV8()
+            else:
+                market_historical_data = OHLC_YahooFinance(row['Ticker'], row['FirstBuyDate'].strftime('%Y-%m-%d'), row['LastDate'].strftime('%Y-%m-%d')).yahooDataV8()
+            market_historical_data['ticker'] = row['Ticker']
+            df_market_historical_data = pd.concat([df_market_historical_data, market_historical_data], ignore_index=True)
+        except Exception as e:
+            print(f"Error retrieving data for {row['Ticker']}: {e}")
+            
+            # Fallback to synthetic data
+            df_synthetic = synthetic_historical_data_generator(df_trade_history[df_trade_history['Ticker'] == row['Ticker']], row['Ticker'])
+            df_market_historical_data = pd.concat([df_market_historical_data, df_synthetic], ignore_index=True)
+
+            continue
+    return df_market_historical_data
+
 
 st.title("Portfolio Management Dashboard and Analytics")
 
@@ -150,7 +251,8 @@ if uploaded_file is not None:
             df_current_positions['Quantity'] = pd.to_numeric(df_current_positions['Quantity'], errors='coerce')
             df_current_positions['Current Price'] = pd.to_numeric(df_current_positions['Current Price'], errors='coerce')
             df_current_positions['Market Value'] = df_current_positions['Quantity'] * df_current_positions['Current Price']
-            GBP = getEODpriceUK(['GBPUSD=X', 'GBPEUR=X'])
+            GBPUSD = get_historical_fx(df_trade_history_ticker_updated['Date'].min().strftime('%Y-%m-%d'))['GBPUSD=X']
+            GBPEUR = get_historical_fx(df_trade_history_ticker_updated['Date'].min().strftime('%Y-%m-%d'))['GBPEUR=X']
             df_current_positions['Market Value GBP'] = df_current_positions.apply(convert_to_gbp, axis=1)
 
             Total_market_value_gbp = df_current_positions['Market Value GBP'].sum()
@@ -206,5 +308,41 @@ if uploaded_file is not None:
             if selected_company in instruments_list:
                 idx = instruments_list.index(selected_company)
                 standout[idx] = 0.5
-            fig = ppw.plot_portfolio_weights(df_current_positions, standout, GBP)
+            current_GBP_rate = {'GBPUSD=X': GBPUSD.iloc[-1], 'GBPEUR=X': GBPEUR.iloc[-1]}
+            fig = ppw.plot_portfolio_weights(df_current_positions, standout, current_GBP_rate)
             st.plotly_chart(fig, use_container_width=True)
+
+
+            # ============ PORTFOLIO VALUE OVER TIME WIDGET ============
+            st.subheader("Portfolio Value Over Time")
+
+            # Date Range Slider
+            today_date = datetime.now().date()
+            one_year_ago = today_date - pd.DateOffset(years=1)
+            two_years_ago = today_date - pd.DateOffset(years=2)
+
+            selected_date_range = st.slider(
+                "Select Date Range",
+                min_value=two_years_ago.date(),
+                max_value=today_date,
+                value=(one_year_ago.date(), today_date),
+                format="YYYY-MM-DD"
+            )
+            
+            start_date_selected, end_date_selected = selected_date_range
+            st.write(f"Showing data from {start_date_selected} to {end_date_selected}")
+            
+            left1, left2, middle1, middle2, right1, right2 = st.columns(6)
+            if left1.button("1y", width="stretch"):
+                selected_date = calculate_past_date("1y")
+            if left2.button("6m", width="stretch"):
+                selected_date = calculate_past_date("6m")
+            if middle1.button("3m", width="stretch"):
+                selected_date = calculate_past_date("3m")
+            if middle2.button("1m", width="stretch"):
+                selected_date = calculate_past_date("1m")
+            if right1.button("1w", width="stretch"):
+                selected_date = calculate_past_date("1w")
+            if right2.button("1d", width="stretch"):
+                selected_date = calculate_past_date("1d")
+            
